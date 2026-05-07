@@ -1,230 +1,467 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Brand Visibility — AI Visibility Suite</title>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Visibility — AEO Suite</title>
 
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+<link rel="stylesheet" href="shared/tokens.css" />
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-  </head>
+<style>
+  /* ---------- Page-specific styles for AI Visibility ---------- */
 
-  <body>
-    <div class="shell">
-      <!-- Top bar -->
-      <header class="topbar">
-        <div class="brand-mark">A</div>
-        <div class="brand-text">
-          <div class="product">AEO Suite</div>
-          <div class="suite">AI Visibility · v1</div>
+  .form-card {
+    padding: 28px 32px;
+    position: relative;
+  }
+  .form-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 32px; right: 32px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-line), transparent);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .form-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .form-actions .helper {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+  }
+
+  /* ---------- "What's next?" zone ---------- */
+  .next-zone { margin-top: 40px; display: none; }
+  .next-zone.show { display: block; animation: rise 0.5s ease-out; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .next-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    padding: 0 4px;
+  }
+  .next-header .title {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-style: italic;
+    letter-spacing: -0.01em;
+  }
+  .next-header .title em { color: var(--accent); font-style: italic; }
+  .next-header .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* 2+2 layout */
+  .actions-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .action-card {
+    position: relative;
+    padding: 26px 28px 22px;
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .action-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 100% 0%, var(--accent-glow) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+  }
+  .action-card:hover {
+    border-color: var(--accent-line);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+  }
+  .action-card:hover::before { opacity: 1; }
+
+  .action-card .num {
+    position: absolute;
+    top: 22px; right: 24px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+  }
+
+  .action-card .icon {
+    width: 44px; height: 44px;
+    border-radius: 11px;
+    background: var(--bg-3);
+    border: 1px solid var(--line-strong);
+    display: grid; place-items: center;
+    color: var(--accent);
+    margin-bottom: 18px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .action-card:hover .icon {
+    background: var(--accent-glow);
+    border-color: var(--accent-line);
+  }
+  .action-card .icon svg { width: 20px; height: 20px; }
+
+  .action-card .label {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-style: italic;
+    letter-spacing: -0.005em;
+    margin-bottom: 6px;
+  }
+
+  .action-card .desc {
+    color: var(--ink-mute);
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    max-width: 92%;
+  }
+
+  .action-card .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .action-card .cta .arrow { transition: transform 0.15s; }
+  .action-card:hover .cta .arrow { transform: translateX(4px); }
+
+  /* Secondary actions */
+  .secondary-actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 16px;
+    background: var(--bg-1);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-sm);
+  }
+  .secondary-actions .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    align-self: center;
+    margin-right: 4px;
+  }
+  .secondary-actions a {
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--line-strong);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .secondary-actions a:hover {
+    color: var(--accent);
+    border-color: var(--accent-line);
+  }
+
+  /* Responsive */
+  @media (max-width: 720px) {
+    .actions-row { grid-template-columns: 1fr; }
+    .form-actions { flex-wrap: wrap; }
+    .form-actions .helper { width: 100%; margin: 0; }
+  }
+</style>
+</head>
+
+<body>
+<div class="shell">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <a href="index.html" class="brand-mark">A</a>
+    <div class="brand-text">
+      <div class="product">AEO Suite</div>
+      <div class="suite">AI Visibility · v1</div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="status-pill">LIVE</div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="eyebrow">Step 01 — Brand Visibility</div>
+    <h1>Measure how AI engines <em>see your brand</em>.</h1>
+    <p>Run a visibility scan across the queries that matter to your customers. We'll collect rankings, mentions, and competitor signals, then you choose how to explore the data.</p>
+  </section>
+
+  <!-- Form card -->
+  <section class="card form-card">
+    <form id="analyzeForm" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="brand">Brand</label>
+          <input type="text" id="brand" placeholder="e.g., Allbirds" required />
+          <div class="hint">The brand we'll track across results.</div>
         </div>
-        <div class="topbar-spacer"></div>
-        <div class="status-pill">LIVE</div>
-      </header>
 
-      <!-- Hero -->
-      <section class="hero">
-        <div class="eyebrow">Step 01 — Brand Visibility</div>
-        <h1>Measure how AI engines <em>see your brand</em>.</h1>
-        <p>
-          Run a visibility scan across the queries that matter to your
-          customers. We'll collect rankings, mentions, and competitor signals
-          into a single report you can act on.
-        </p>
-      </section>
-
-      <!-- Form card -->
-      <section class="card form-card">
-        <form id="analyzeForm" novalidate>
-          <div class="form-grid">
-            <div class="field">
-              <label for="brand">Brand</label>
-              <input
-                type="text"
-                id="brand"
-                placeholder="e.g., Allbirds"
-                required
-              />
-              <div class="hint">The brand we'll track across results.</div>
-            </div>
-
-            <div class="field">
-              <label for="queries">Queries</label>
-              <textarea
-                id="queries"
-                placeholder="best running shoes, sustainable sneakers, athletic footwear"
-                required
-              ></textarea>
-              <div class="hint">
-                Comma-separated. 3–10 queries gives the best signal.
-              </div>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button
-              type="submit"
-              name="engine"
-              value="gpt"
-              class="btn btn-primary"
-              id="submitBtn"
-            >
-              Run Visibility Scan <span class="arrow">→</span>
-            </button>
-            <span class="helper">~ 10–12 MIN · powered by GPT, Perplexity and AI Mode</span>
-          </div>
-        </form>
-
-        <div id="status" class="status"></div>
-      </section>
-
-      <!-- "What's next?" zone — appears after sheet is generated -->
-      <section class="next-zone" id="nextZone">
-        <div class="next-header">
-          <div class="title">What's <em>next</em>?</div>
-          <div class="meta">02 — Choose a workflow</div>
+        <div class="field">
+          <label for="queries">Queries</label>
+          <textarea id="queries" placeholder="best running shoes, sustainable sneakers, athletic footwear" required></textarea>
+          <div class="hint">Comma-separated. 3–10 queries gives the best signal.</div>
         </div>
+      </div>
 
-        <div class="actions-grid">
-          <button class="action-card" id="actionDashboard" type="button">
-            <span class="num">01</span>
-            <div class="icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="3" width="7" height="9" rx="1.5" />
-                <rect x="14" y="3" width="7" height="5" rx="1.5" />
-                <rect x="14" y="12" width="7" height="9" rx="1.5" />
-                <rect x="3" y="16" width="7" height="5" rx="1.5" />
-              </svg>
-            </div>
-            <div class="label">View on Dashboard</div>
-            <div class="desc">
-              Render charts, rankings, and the full breakdown of your scan in
-              this view. Ideal for quick exploration.
-            </div>
-            <div class="cta">Open Dashboard <span class="arrow">→</span></div>
-          </button>
+      <div class="form-actions">
+        <button type="submit" name="engine" value="gpt" class="btn btn-primary" id="submitBtn">
+          Run Visibility Scan <span class="arrow">→</span>
+        </button>
+        <span class="helper">~ 10–12 MIN · powered by GPT</span>
+      </div>
+    </form>
 
-          <button class="action-card" id="actionCompetitor" type="button">
-            <span class="num">02</span>
-            <div class="icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="8" y1="13" x2="16" y2="13" />
-                <line x1="8" y1="17" x2="13" y2="17" />
-              </svg>
-            </div>
-            <div class="label">Competitor Report</div>
-            <div class="desc">
-              Generate a side-by-side analysis of how competitors are showing up
-              against your brand across all queries.
-            </div>
-            <div class="cta">Generate Report <span class="arrow">→</span></div>
-          </button>
-        </div>
+    <div id="status" class="status"></div>
+  </section>
 
-        <div class="secondary-actions">
-          <span class="label">Or</span>
-          <a href="#" id="sheetLinkSecondary" target="_blank" rel="noopener"
-            >Open raw spreadsheet ↗</a
-          >
-          <a href="#" id="newScanLink">Run another scan</a>
-        </div>
-      </section>
-
-      <!-- Analysis (rendered when webhook returns row data instead of a sheet) -->
-      <section class="analysis" id="analysisSection">
-        <div class="section-head">
-          <h2>Analysis <em>results</em></h2>
-          <div class="engine-badge" id="engineBadge">GPT</div>
-        </div>
-
-        <div class="metrics">
-          <div class="metric">
-            <div class="k">Total Rows</div>
-            <div class="v" id="totalRows">0</div>
-            <div class="sub">data points collected</div>
-          </div>
-          <div class="metric">
-            <div class="k">Avg Visibility</div>
-            <div class="v" id="avgScore">0</div>
-            <div class="sub">score across queries</div>
-          </div>
-          <div class="metric">
-            <div class="k">Brand in URLs</div>
-            <div class="v" id="urlMentions">0</div>
-            <div class="sub">direct URL mentions</div>
-          </div>
-          <div class="metric">
-            <div class="k">Competitors</div>
-            <div class="v" id="competitorsCount">0</div>
-            <div class="sub">unique brands found</div>
-          </div>
-        </div>
-
-        <div class="charts-grid">
-          <div class="chart-card">
-            <h3>Visibility by Query</h3>
-            <canvas id="scoreChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Top Competitors</h3>
-            <canvas id="competitorChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Ranking Distribution</h3>
-            <canvas id="rankChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Brand URL Presence</h3>
-            <canvas id="urlChart"></canvas>
-          </div>
-        </div>
-
-        <div class="table-card">
-          <div class="table-head"><h3>Detailed Results</h3></div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Query</th>
-                  <th>Competitor</th>
-                  <th>Rank</th>
-                  <th>Visibility</th>
-                  <th>Brand in URL</th>
-                  <th>Comp. in URL</th>
-                </tr>
-              </thead>
-              <tbody id="resultsBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+  <!-- "What's next?" zone — appears on success -->
+  <section class="next-zone" id="nextZone">
+    <div class="next-header">
+      <div class="title">What's <em>next</em>?</div>
+      <div class="meta">02 — Choose a workflow</div>
     </div>
 
-    <script src="script.js"></script>
-  </body>
+    <div class="actions-stack">
+      <!-- Row 1 -->
+      <div class="actions-row">
+        <button class="action-card" data-target="dashboard.html" type="button">
+          <span class="num">01</span>
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9" rx="1.5"/>
+              <rect x="14" y="3" width="7" height="5" rx="1.5"/>
+              <rect x="14" y="12" width="7" height="9" rx="1.5"/>
+              <rect x="3" y="16" width="7" height="5" rx="1.5"/>
+            </svg>
+          </div>
+          <div class="label">View Report on Dashboard</div>
+          <div class="desc">The full breakdown — visibility scores, ranking distribution, top competitors, and the detailed results table.</div>
+          <div class="cta">Open Dashboard <span class="arrow">→</span></div>
+        </button>
+
+        <button class="action-card" data-target="competitor-report.html" type="button">
+          <span class="num">02</span>
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="8" y1="13" x2="16" y2="13"/>
+              <line x1="8" y1="17" x2="13" y2="17"/>
+            </svg>
+          </div>
+          <div class="label">Competitor Report</div>
+          <div class="desc">Side-by-side analysis of how competitors are showing up across your queries.</div>
+          <div class="cta">Generate <span class="arrow">→</span></div>
+        </button>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="actions-row">
+        <button class="action-card" data-target="topical-relevance.html" type="button">
+          <span class="num">03</span>
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 3v18M3 12h18"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+          </div>
+          <div class="label">Topical Relevance Plan</div>
+          <div class="desc">A content plan that maps the topics and themes you should own to close visibility gaps.</div>
+          <div class="cta">Generate <span class="arrow">→</span></div>
+        </button>
+
+        <button class="action-card" data-target="website-categorization.html" type="button">
+          <span class="num">04</span>
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7l9-4 9 4-9 4-9-4z"/>
+              <path d="M3 12l9 4 9-4"/>
+              <path d="M3 17l9 4 9-4"/>
+            </svg>
+          </div>
+          <div class="label">Website Categorization</div>
+          <div class="desc">Group the sites surfaced in your scan into industry and topic categories to understand the landscape.</div>
+          <div class="cta">Generate <span class="arrow">→</span></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="secondary-actions">
+      <span class="label">Or</span>
+      <a href="#" id="newScanLink">Run another scan</a>
+    </div>
+  </section>
+
+</div>
+
+<script src="shared/state.js"></script>
+<script>
+  // ---------- Config ----------
+  const WEBHOOKS = {
+    gpt: 'https://n8n-smartmarketer.duckdns.org/webhook/873bf322-b3db-4e92-99ec-d50579be2583'
+  };
+
+  // ---------- DOM refs ----------
+  const els = {
+    form:          document.getElementById('analyzeForm'),
+    brand:         document.getElementById('brand'),
+    queries:       document.getElementById('queries'),
+    submitBtn:     document.getElementById('submitBtn'),
+    status:        document.getElementById('status'),
+    nextZone:      document.getElementById('nextZone'),
+    newScanLink:   document.getElementById('newScanLink'),
+  };
+
+  // Default values for quick testing
+  window.addEventListener('load', () => {
+    els.brand.value   = 'My Brand';
+    els.queries.value = 'best running shoes, top rated sneakers';
+  });
+
+  // ---------- Helpers ----------
+  function showStatus(type, html) {
+    els.status.className = 'status show ' + type;
+    els.status.innerHTML = html;
+  }
+  function clearStatus() {
+    els.status.className = 'status';
+    els.status.innerHTML = '';
+  }
+
+  function showNextZone() {
+    els.nextZone.classList.add('show');
+    setTimeout(() => els.nextZone.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+
+  function hideNextZone() {
+    els.nextZone.classList.remove('show');
+  }
+
+  // ---------- Action card navigation ----------
+  document.querySelectorAll('.action-card[data-target]').forEach(card => {
+    card.addEventListener('click', () => {
+      const target = card.getAttribute('data-target');
+      // Data is shared via localStorage, so each report opens in its own tab.
+      window.open(target, '_blank', 'noopener');
+    });
+  });
+
+  els.newScanLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    ToolState.clear();
+    hideNextZone();
+    clearStatus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ---------- Form submit ----------
+  els.form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const engineId = e.submitter?.value || 'gpt';
+    const targetWebhook = WEBHOOKS[engineId];
+
+    const brand   = els.brand.value.trim();
+    const queries = els.queries.value.split(',').map(q => q.trim()).filter(Boolean);
+
+    if (queries.length === 0) {
+      showStatus('error', 'Please enter at least one query.');
+      return;
+    }
+
+    hideNextZone();
+    ToolState.clear();
+    els.submitBtn.disabled = true;
+    els.submitBtn.classList.add('loading');
+    els.submitBtn.innerHTML = 'Running scan';
+
+    showStatus('loading', "Connecting to the visibility engine. We're collecting rankings across your queries — this usually takes 10–12 minutes.");
+
+    try {
+      const response = await fetch(targetWebhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        mode: 'cors',
+        body: JSON.stringify({ Brand: brand, Query: queries })
+      });
+
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+
+      const data = await response.json();
+
+      // Expecting an array of populated rows now (workflow returns when sheet is fully populated).
+      const rows = Array.isArray(data) ? data : (Array.isArray(data?.rows) ? data.rows : null);
+
+      if (rows && rows.length > 0) {
+        // Persist scan context so destination pages can read it.
+        ToolState.set('brand',   brand);
+        ToolState.set('queries', queries);
+        ToolState.set('rows',    rows);
+        ToolState.set('runAt',   new Date().toISOString());
+
+        showStatus(
+          'success',
+          `<strong>Scan complete.</strong> Collected ${rows.length} data points across ${queries.length} ${queries.length === 1 ? 'query' : 'queries'}. Choose how you'd like to explore the report below.`
+        );
+        showNextZone();
+      } else {
+        showStatus('info', 'The scan ran but returned no usable data. Try different queries or check the workflow output.');
+      }
+    } catch (err) {
+      console.error(err);
+      showStatus('error', `Could not complete the scan: ${err.message}. Check the webhook connection.`);
+    } finally {
+      els.submitBtn.disabled = false;
+      els.submitBtn.classList.remove('loading');
+      els.submitBtn.innerHTML = 'Run Visibility Scan <span class="arrow">→</span>';
+    }
+  });
+</script>
+</body>
 </html>

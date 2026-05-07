@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Competitor Report — AEO Suite</title>
+
+<link rel="stylesheet" href="shared/tokens.css" />
+
+<style>
+  .source-section { margin-bottom: 40px; }
+
+  .report-empty {
+    padding: 60px 32px;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    text-align: center;
+    color: var(--ink-mute);
+  }
+  .report-empty .ico {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 64px;
+    color: var(--ink-faint);
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+  .report-empty h3 {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 24px;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .report-empty p { max-width: 420px; margin: 0 auto; font-size: 14px; }
+
+  #reportRoot { display: none; }
+  #reportRoot.show { display: block; }
+</style>
+</head>
+
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <a href="index.html" class="brand-mark">A</a>
+    <div class="brand-text">
+      <div class="product">AEO Suite</div>
+      <div class="suite">Competitor Report · v1</div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="status-pill">LIVE</div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Step 02 — Competitor Report</div>
+    <h1>See who's <em>winning the queries</em> you care about.</h1>
+    <p>A side-by-side analysis of how competing brands are showing up across your queries. Continue from a previous scan, or upload a CSV to start fresh.</p>
+  </section>
+
+  <section class="source-section" id="sourceSection">
+    <div id="continueSlot"></div>
+
+    <div id="uploadSlot">
+      <div class="or-divider" id="orDivider" style="display:none;">Or upload a CSV</div>
+
+      <label class="drop-zone" id="dropZone">
+        <input type="file" id="csvInput" accept=".csv,text/csv" />
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="dz-title">Drop a CSV, or click to browse</div>
+        <div class="dz-sub">Use any visibility-scan CSV — same columns as the AI Visibility output.</div>
+      </label>
+    </div>
+  </section>
+
+  <section class="card" id="reportRoot" style="padding: 48px 32px;">
+    <div class="section-head">
+      <h2>Competitor <em>analysis</em></h2>
+      <div class="status-pill" id="reportMeta">0 ROWS</div>
+    </div>
+    <div class="report-empty">
+      <div class="ico">∅</div>
+      <h3>Competitor analysis goes here</h3>
+      <p>The competitor breakdown (share of voice, head-to-head matchups, gap analysis) will be built into this section.</p>
+    </div>
+  </section>
+
+</div>
+
+<script src="shared/state.js"></script>
+<script>
+  const els = {
+    continueSlot: document.getElementById('continueSlot'),
+    orDivider:    document.getElementById('orDivider'),
+    dropZone:     document.getElementById('dropZone'),
+    csvInput:     document.getElementById('csvInput'),
+    reportRoot:   document.getElementById('reportRoot'),
+    reportMeta:   document.getElementById('reportMeta'),
+  };
+
+  function init() {
+    const ctx = ToolState.getScanContext();
+    if (ctx && ctx.rows.length > 0) {
+      renderContinuePanel(ctx);
+      els.orDivider.style.display = 'flex';
+      loadRows(ctx.rows, { brand: ctx.brand, queries: ctx.queries });
+    }
+  }
+
+  function renderContinuePanel(ctx) {
+    const queryCount = ctx.queries.length;
+    const queryLabel = queryCount === 1 ? 'query' : 'queries';
+    const when = ctx.runAt ? new Date(ctx.runAt).toLocaleString() : 'recent';
+
+    els.continueSlot.innerHTML = `
+      <div class="continue-panel">
+        <div class="cp-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="cp-text">
+          <div class="cp-title">Loaded from your latest scan</div>
+          <div class="cp-meta">${ctx.brand || 'Brand'} · ${queryCount} ${queryLabel} · ${ctx.rows.length} rows · ${when}</div>
+        </div>
+        <button class="btn btn-ghost" id="clearStateBtn" type="button">Use a different file</button>
+      </div>
+    `;
+    document.getElementById('clearStateBtn').addEventListener('click', () => {
+      ToolState.clear();
+      els.continueSlot.innerHTML = '';
+      els.orDivider.style.display = 'none';
+      els.reportRoot.classList.remove('show');
+    });
+  }
+
+  els.dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    els.dropZone.classList.add('is-dragover');
+  });
+  els.dropZone.addEventListener('dragleave', () => {
+    els.dropZone.classList.remove('is-dragover');
+  });
+  els.dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    els.dropZone.classList.remove('is-dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleCsvFile(file);
+  });
+  els.csvInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleCsvFile(file);
+  });
+
+  function handleCsvFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const rows = parseCsv(e.target.result);
+      loadRows(rows, { brand: '', queries: [] });
+    };
+    reader.readAsText(file);
+  }
+
+  function parseCsv(text) {
+    const lines = [];
+    let cur = '', inQuotes = false, row = [];
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"' && text[i + 1] === '"') { cur += '"'; i++; }
+        else if (ch === '"') { inQuotes = false; }
+        else { cur += ch; }
+      } else {
+        if (ch === '"') inQuotes = true;
+        else if (ch === ',') { row.push(cur); cur = ''; }
+        else if (ch === '\n' || ch === '\r') {
+          if (cur !== '' || row.length) { row.push(cur); lines.push(row); row = []; cur = ''; }
+          if (ch === '\r' && text[i + 1] === '\n') i++;
+        } else { cur += ch; }
+      }
+    }
+    if (cur !== '' || row.length) { row.push(cur); lines.push(row); }
+    if (lines.length === 0) return [];
+    const headers = lines[0].map(h => h.trim());
+    return lines.slice(1).map(arr => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = arr[i] ?? ''; });
+      return obj;
+    });
+  }
+
+  function loadRows(rows, meta) {
+    els.reportRoot.classList.add('show');
+    els.reportMeta.textContent = `${rows.length} ROWS`;
+    console.log('[Competitor Report] loaded rows:', rows.length, 'meta:', meta);
+  }
+
+  init();
+</script>
+</body>
+</html>
