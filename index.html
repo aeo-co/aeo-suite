@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brand Visibility — AI Visibility Suite</title>
+
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  </head>
+
+  <body>
+    <div class="shell">
+      <!-- Top bar -->
+      <header class="topbar">
+        <div class="brand-mark">A</div>
+        <div class="brand-text">
+          <div class="product">AEO Suite</div>
+          <div class="suite">AI Visibility · v1</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="status-pill">LIVE</div>
+      </header>
+
+      <!-- Hero -->
+      <section class="hero">
+        <div class="eyebrow">Step 01 — Brand Visibility</div>
+        <h1>Measure how AI engines <em>see your brand</em>.</h1>
+        <p>
+          Run a visibility scan across the queries that matter to your
+          customers. We'll collect rankings, mentions, and competitor signals
+          into a single report you can act on.
+        </p>
+      </section>
+
+      <!-- Form card -->
+      <section class="card form-card">
+        <form id="analyzeForm" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label for="brand">Brand</label>
+              <input
+                type="text"
+                id="brand"
+                placeholder="e.g., Allbirds"
+                required
+              />
+              <div class="hint">The brand we'll track across results.</div>
+            </div>
+
+            <div class="field">
+              <label for="queries">Queries</label>
+              <textarea
+                id="queries"
+                placeholder="best running shoes, sustainable sneakers, athletic footwear"
+                required
+              ></textarea>
+              <div class="hint">
+                Comma-separated. 3–10 queries gives the best signal.
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="submit"
+              name="engine"
+              value="gpt"
+              class="btn btn-primary"
+              id="submitBtn"
+            >
+              Run Visibility Scan <span class="arrow">→</span>
+            </button>
+            <span class="helper">~ 10–12 MIN · powered by GPT, Perplexity and AI Mode</span>
+          </div>
+        </form>
+
+        <div id="status" class="status"></div>
+      </section>
+
+      <!-- "What's next?" zone — appears after sheet is generated -->
+      <section class="next-zone" id="nextZone">
+        <div class="next-header">
+          <div class="title">What's <em>next</em>?</div>
+          <div class="meta">02 — Choose a workflow</div>
+        </div>
+
+        <div class="actions-grid">
+          <button class="action-card" id="actionDashboard" type="button">
+            <span class="num">01</span>
+            <div class="icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="9" rx="1.5" />
+                <rect x="14" y="3" width="7" height="5" rx="1.5" />
+                <rect x="14" y="12" width="7" height="9" rx="1.5" />
+                <rect x="3" y="16" width="7" height="5" rx="1.5" />
+              </svg>
+            </div>
+            <div class="label">View on Dashboard</div>
+            <div class="desc">
+              Render charts, rankings, and the full breakdown of your scan in
+              this view. Ideal for quick exploration.
+            </div>
+            <div class="cta">Open Dashboard <span class="arrow">→</span></div>
+          </button>
+
+          <button class="action-card" id="actionCompetitor" type="button">
+            <span class="num">02</span>
+            <div class="icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="8" y1="13" x2="16" y2="13" />
+                <line x1="8" y1="17" x2="13" y2="17" />
+              </svg>
+            </div>
+            <div class="label">Competitor Report</div>
+            <div class="desc">
+              Generate a side-by-side analysis of how competitors are showing up
+              against your brand across all queries.
+            </div>
+            <div class="cta">Generate Report <span class="arrow">→</span></div>
+          </button>
+        </div>
+
+        <div class="secondary-actions">
+          <span class="label">Or</span>
+          <a href="#" id="sheetLinkSecondary" target="_blank" rel="noopener"
+            >Open raw spreadsheet ↗</a
+          >
+          <a href="#" id="newScanLink">Run another scan</a>
+        </div>
+      </section>
+
+      <!-- Analysis (rendered when webhook returns row data instead of a sheet) -->
+      <section class="analysis" id="analysisSection">
+        <div class="section-head">
+          <h2>Analysis <em>results</em></h2>
+          <div class="engine-badge" id="engineBadge">GPT</div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="k">Total Rows</div>
+            <div class="v" id="totalRows">0</div>
+            <div class="sub">data points collected</div>
+          </div>
+          <div class="metric">
+            <div class="k">Avg Visibility</div>
+            <div class="v" id="avgScore">0</div>
+            <div class="sub">score across queries</div>
+          </div>
+          <div class="metric">
+            <div class="k">Brand in URLs</div>
+            <div class="v" id="urlMentions">0</div>
+            <div class="sub">direct URL mentions</div>
+          </div>
+          <div class="metric">
+            <div class="k">Competitors</div>
+            <div class="v" id="competitorsCount">0</div>
+            <div class="sub">unique brands found</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>Visibility by Query</h3>
+            <canvas id="scoreChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Top Competitors</h3>
+            <canvas id="competitorChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Ranking Distribution</h3>
+            <canvas id="rankChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Brand URL Presence</h3>
+            <canvas id="urlChart"></canvas>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-head"><h3>Detailed Results</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Query</th>
+                  <th>Competitor</th>
+                  <th>Rank</th>
+                  <th>Visibility</th>
+                  <th>Brand in URL</th>
+                  <th>Comp. in URL</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
