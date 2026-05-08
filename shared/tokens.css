@@ -14,10 +14,16 @@
   --line:        rgba(255, 255, 255, 0.07);
   --line-strong: rgba(255, 255, 255, 0.14);
 
-  /* Type colors */
+  /* Type colors
+     Hierarchy bottom-to-top by visual weight:
+       --ink        primary text (body, headings)               ~14.5:1 contrast
+       --ink-mute   secondary text (descriptions, hints, ~13px) ~5.5:1
+       --ink-faint  tertiary mono labels at smaller sizes       ~6.5:1   (intentionally
+                                                                          stronger because
+                                                                          the type is smaller) */
   --ink:         #ECEBE6;
-  --ink-mute:    #8C8E96;
-  --ink-faint:   #5C5E66;
+  --ink-mute:    #9DA0A8;
+  --ink-faint:   #B0B2BA;
 
   /* Accent — refined amber/gold */
   --accent:      #E8B86A;
@@ -79,17 +85,43 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .brand-mark {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-lo) 100%);
-  display: grid; place-items: center;
-  color: var(--bg-0);
+  width: 44px; height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg-3) 100%);
+  border: 1px solid var(--accent-line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 17px;
   font-style: italic;
   font-weight: 400;
-  box-shadow: 0 4px 18px var(--accent-glow);
+  letter-spacing: 0.01em;
+  line-height: 1;
   text-decoration: none;
+  position: relative;
+  box-shadow: 0 2px 12px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: border-color 0.2s, transform 0.2s;
+}
+.brand-mark:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.brand-mark span {
+  /* nudge the wordmark up a touch so the underline sits visually right */
+  transform: translateY(-2px);
 }
 
 .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
@@ -226,7 +258,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .field { display: flex; flex-direction: column; }
 .field label {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-faint);
   letter-spacing: 0.14em;
   text-transform: uppercase;
