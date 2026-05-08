@@ -253,7 +253,7 @@
         <button type="submit" name="engine" value="gpt" class="btn btn-primary" id="submitBtn">
           Run Visibility Scan <span class="arrow">→</span>
         </button>
-        <span class="helper">~ 10–12 MIN · powered by GPT</span>
+        <span class="helper">~ 15–20 MIN · powered by GPT, Perplexity and AI Mode</span>
       </div>
     </form>
 
@@ -421,7 +421,7 @@
     els.submitBtn.classList.add('loading');
     els.submitBtn.innerHTML = 'Running scan';
 
-    showStatus('loading', "Connecting to the visibility engine. We're collecting rankings across your queries — this usually takes 10–12 minutes.");
+    showStatus('loading', "Connecting to the visibility engine. We're collecting rankings across your queries — this usually takes 15–20 minutes.");
 
     try {
       const response = await fetch(targetWebhook, {
