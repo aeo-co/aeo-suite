@@ -133,6 +133,44 @@
   }
   .panel-label::before { content: '//'; color: var(--accent); }
 
+  /* Variant that places an action button on the right of the panel header */
+  .panel-label.panel-label-with-action {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .panel-label.panel-label-with-action::before {
+    /* keep the // marker pinned to the label text on the left, not stretched */
+    flex-shrink: 0;
+  }
+  .panel-label.panel-label-with-action > span:first-of-type {
+    flex: 1;
+  }
+
+  .btn-export-csv {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    color: var(--ink-mute);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-export-csv:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg-3);
+  }
+  .btn-export-csv svg {
+    flex-shrink: 0;
+  }
+
   /* ---------- Key insights ---------- */
   .insights-counts {
     display: grid;
@@ -686,6 +724,214 @@
     border-radius: 50%;
   }
 
+  /* ============================================================
+     AI Summary panel — shown at top of report
+     ============================================================ */
+  .ai-summary {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ai-summary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .ai-summary .summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .ai-summary .summary-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ai-summary .summary-scope {
+    color: var(--ink-faint);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    cursor: help;
+  }
+  .ai-summary .summary-label::before {
+    content: '✦';
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .ai-summary .summary-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ai-summary .regen-btn {
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-mute);
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ai-summary .regen-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .ai-summary .regen-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ai-summary .summary-section {
+    margin-bottom: 22px;
+  }
+  .ai-summary .summary-section:last-child {
+    margin-bottom: 0;
+  }
+  .ai-summary .summary-section .sec-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ai-summary .summary-section.opp .sec-label { color: var(--ok); }
+  .ai-summary .summary-section.risk .sec-label { color: var(--bad); }
+  .ai-summary .summary-section .sec-label::before {
+    content: '';
+    width: 14px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.5;
+  }
+  .ai-summary .summary-text {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--ink);
+    font-weight: 300;
+    letter-spacing: -0.005em;
+  }
+  .ai-summary .summary-text em {
+    color: var(--accent);
+    font-style: italic;
+  }
+  .ai-summary .summary-section.top .summary-text {
+    font-size: 21px;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .ai-summary .recommendations {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: rec-counter;
+  }
+  .ai-summary .recommendations li {
+    position: relative;
+    padding: 10px 0 10px 32px;
+    border-top: 1px solid var(--line);
+    counter-increment: rec-counter;
+    color: var(--ink);
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  .ai-summary .recommendations li:first-child {
+    border-top: none;
+  }
+  .ai-summary .recommendations li::before {
+    content: counter(rec-counter, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+
+  /* Loading state */
+  .ai-summary.loading .summary-content {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .ai-summary .summary-loading-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(21, 24, 31, 0.4);
+    backdrop-filter: blur(2px);
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .ai-summary.loading .summary-loading-overlay {
+    display: flex;
+  }
+  .ai-summary .loading-card-inner {
+    text-align: center;
+  }
+  .ai-summary .spinner-inline {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border: 2px solid var(--line-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: ai-sum-spin 0.8s linear infinite;
+    margin-bottom: 10px;
+  }
+  @keyframes ai-sum-spin { to { transform: rotate(360deg); } }
+  .ai-summary .loading-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Error / unavailable state */
+  .ai-summary.error {
+    border-color: var(--line);
+  }
+  .ai-summary .summary-error {
+    padding: 12px 16px;
+    background: var(--bg-0);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-sm);
+    color: var(--ink-mute);
+    font-size: 13px;
+    text-align: center;
+  }
+  .ai-summary .summary-error em { color: var(--accent); font-style: italic; }
+
   /* ---------- Platform performance table ---------- */
   .platform-perf {
     overflow-x: auto;
@@ -961,6 +1207,8 @@
     .heatmap .hm-row { grid-template-columns: minmax(160px, 1fr) repeat(var(--platform-count, 3), 72px); }
     .win-row { flex-wrap: wrap; }
     .win-row .win-score { margin-left: auto; }
+    .ai-summary { padding: 22px 20px; }
+    .ai-summary .summary-section.top .summary-text { font-size: 18px; }
   }
 </style>
 </head>
@@ -1343,6 +1591,275 @@
   }
 
   // ============================================================
+  // AI Summary — webhook config + cache layer
+  // ============================================================
+
+  // Set this to your real n8n endpoint when ready. While empty,
+  // the summary panel shows an "unavailable" state without breaking.
+  const SUMMARY_WEBHOOK = 'https://n8n-smartmarketer.duckdns.org/webhook/summary-dashboard';
+
+  // Cache key derived from scan content + active platform filter so each
+  // view (All / GPT / Perplexity / AI Mode) gets its own cached summary.
+  function summaryCacheKey(rows, brand) {
+    const firstDate = rows[0] ? String(fieldVal(rows[0], state.fields?.date) || '') : '';
+    const filter = state.platformFilter || 'all';
+    return `aeo:summary:dashboard:${String(brand).toLowerCase()}:${filter}:${rows.length}:${firstDate}`;
+  }
+
+  function readSummaryCache(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeSummaryCache(key, summary) {
+    try {
+      localStorage.setItem(key, JSON.stringify(summary));
+    } catch (e) {
+      // Quota / privacy mode etc. — fail silently
+    }
+  }
+
+  // Distill scan data into a compact stats payload for the LLM.
+  // Sending the whole raw scan would be wasteful and exceed token budgets.
+  function buildSummaryStats(rows, fields, insights, brand) {
+    // Per-platform performance
+    const platformPerf = buildPlatformPerf(rows, fields);
+
+    // Per-query mention status
+    const perQuery = [];
+    const groups = groupByQuery(rows, fields);
+    const targetBrand = String(brand || '').toLowerCase();
+    groups.forEach(g => {
+      const platforms = Object.keys(g.byPlatform);
+      let mentioned = false;
+      let bestScore = null;
+      platforms.forEach(p => {
+        const row = g.byPlatform[p];
+        const s = parseScore(fieldVal(row, fields.score));
+        if (s !== null && (bestScore === null || s > bestScore)) bestScore = s;
+        if (targetBrand) {
+          const hay = (
+            fieldVal(row, fields.rawOutput) + ' ' +
+            extractMentions(row, fields.mentions).join(' ') + ' ' +
+            fieldVal(row, fields.competitorAnalysis)
+          ).toLowerCase();
+          if (hay.includes(targetBrand)) mentioned = true;
+        }
+      });
+      perQuery.push({
+        query: g.query,
+        bestScore: bestScore ?? 0,
+        brandMentioned: mentioned,
+        platformsCovered: platforms.length,
+      });
+    });
+
+    // Top cited domains (top 10 are plenty for the LLM)
+    const topDomains = buildTopDomains(rows, fields, 10).map(([d, c]) => ({ domain: d, queries: c }));
+
+    // Top competitors / brands mentioned (from insights)
+    const topBrands = Object.entries(insights.brandFreq || {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => ({ name, count }));
+
+    // Describe the scope this summary covers — important so the LLM knows
+    // whether it's analyzing the full scan or a single-platform slice.
+    const filter = state.platformFilter || 'all';
+    const filterLabel = filter === 'all'
+      ? 'All platforms'
+      : (PLATFORM_OPTIONS.find(p => p.key === filter)?.label || filter.toUpperCase());
+
+    return {
+      brand: brand,
+      scope: {
+        filter: filter,                // 'all' | 'gpt' | 'perplexity' | 'ai_mode' | ...
+        filterLabel: filterLabel,      // human-readable
+        isSinglePlatform: filter !== 'all',
+      },
+      scanSize: {
+        rows: rows.length,
+        queries: insights.uniqueQueries.size,
+        platforms: platformPerf.length,
+      },
+      overall: {
+        averageVisibilityPct: insights.avgScore,
+        brandMentionedInRows: insights.brandMentionedRows,
+        brandMentionRatePct: insights.brandMentionRate,
+      },
+      platformPerformance: platformPerf.map(p => ({
+        platform: p.label,
+        avgScorePct: p.avgScore,
+        brandMentions: p.mentionCount,
+        mentionRatePct: p.mentionRate,
+        rows: p.rowCount,
+      })),
+      perQuery: perQuery,
+      topCitedDomains: topDomains,
+      topMentionedBrands: topBrands,
+    };
+  }
+
+  async function fetchSummary(stats) {
+    if (!SUMMARY_WEBHOOK) {
+      throw new Error('Summary webhook not configured');
+    }
+    const response = await fetch(SUMMARY_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify(stats),
+    });
+    if (!response.ok) throw new Error('Webhook returned HTTP ' + response.status);
+    return await response.json();
+  }
+
+  function renderSummaryPanel(summary, opts = {}) {
+    const isLoading = opts.loading;
+    const isError   = opts.error;
+    const generatedAt = summary?.generatedAt
+      ? new Date(summary.generatedAt).toLocaleString()
+      : '';
+    const hasContent = summary && (summary.topFinding || summary.keyOpportunity);
+
+    let inner = '';
+    if (isError && !hasContent) {
+      inner = `
+        <div class="summary-error">
+          <em>AI summary unavailable</em> — ${escapeHtml(opts.errorMessage || 'Could not reach the summary service.')} You can still review the full report below.
+        </div>`;
+    } else if (!hasContent && !isLoading) {
+      inner = `
+        <div class="summary-error">
+          <em>AI summary unavailable</em> — Summary endpoint not configured. You can still review the full report below.
+        </div>`;
+    } else {
+      const s = summary || {};
+      inner = `
+        <div class="summary-content">
+          ${s.topFinding ? `
+            <div class="summary-section top">
+              <div class="sec-label">Top Finding</div>
+              <div class="summary-text">${escapeHtml(s.topFinding)}</div>
+            </div>` : ''}
+          ${s.keyOpportunity ? `
+            <div class="summary-section opp">
+              <div class="sec-label">Key Opportunity</div>
+              <div class="summary-text">${escapeHtml(s.keyOpportunity)}</div>
+            </div>` : ''}
+          ${s.keyRisk ? `
+            <div class="summary-section risk">
+              <div class="sec-label">Key Risk</div>
+              <div class="summary-text">${escapeHtml(s.keyRisk)}</div>
+            </div>` : ''}
+          ${s.recommendations && s.recommendations.length > 0 ? `
+            <div class="summary-section">
+              <div class="sec-label">Recommendations</div>
+              <ol class="recommendations">
+                ${s.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+              </ol>
+            </div>` : ''}
+        </div>
+        <div class="summary-loading-overlay">
+          <div class="loading-card-inner">
+            <div class="spinner-inline"></div>
+            <div class="loading-text">Generating insights…</div>
+          </div>
+        </div>`;
+    }
+
+    // Build a scope indicator so users know which view this summary is for.
+    // (Critical when switching platform filters — same panel, different content.)
+    const currentFilter = state.platformFilter || 'all';
+    const scopeLabel = currentFilter === 'all'
+      ? 'All Platforms'
+      : (PLATFORM_OPTIONS.find(p => p.key === currentFilter)?.label || currentFilter.toUpperCase());
+
+    return `
+      <div class="ai-summary ${isLoading ? 'loading' : ''} ${isError ? 'error' : ''}" id="aiSummaryPanel">
+        <div class="summary-header">
+          <div class="summary-label">
+            AI Summary
+            <span class="summary-scope" title="The summary reflects only this view of the data. Switch platforms to get summaries for each.">· ${escapeHtml(scopeLabel)}</span>
+          </div>
+          <div class="summary-meta">
+            ${generatedAt ? `Generated ${escapeHtml(generatedAt)}` : ''}
+            ${SUMMARY_WEBHOOK ? '<button class="regen-btn" id="regenSummaryBtn" type="button">Regenerate</button>' : ''}
+          </div>
+        </div>
+        ${inner}
+      </div>`;
+  }
+
+  // Orchestrator: kick off summary generation if needed, render in place.
+  // Returns the markup to inject; updates the panel in-place after fetch.
+  async function loadSummary(rows, fields, insights, brand) {
+    const cacheKey = summaryCacheKey(rows, brand);
+    const cached = readSummaryCache(cacheKey);
+
+    if (cached) {
+      // Use cached version immediately
+      return { initialMarkup: renderSummaryPanel(cached), cached: true };
+    }
+
+    if (!SUMMARY_WEBHOOK) {
+      return { initialMarkup: renderSummaryPanel(null), cached: false };
+    }
+
+    // Show loading state; fire fetch asynchronously
+    const loadingMarkup = renderSummaryPanel({}, { loading: true });
+
+    // Defer actual fetch until DOM is in place
+    setTimeout(async () => {
+      try {
+        const stats = buildSummaryStats(rows, fields, insights, brand);
+        const summary = await fetchSummary(stats);
+        writeSummaryCache(cacheKey, summary);
+        replaceSummaryPanel(renderSummaryPanel(summary));
+        wireSummaryHandlers(rows, fields, insights, brand);
+      } catch (err) {
+        console.error('Summary fetch failed:', err);
+        replaceSummaryPanel(renderSummaryPanel(null, { error: true, errorMessage: err.message }));
+      }
+    }, 50);
+
+    return { initialMarkup: loadingMarkup, cached: false };
+  }
+
+  function replaceSummaryPanel(markup) {
+    const existing = document.getElementById('aiSummaryPanel');
+    if (!existing) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = markup;
+    existing.replaceWith(wrap.firstElementChild);
+  }
+
+  function wireSummaryHandlers(rows, fields, insights, brand) {
+    const btn = document.getElementById('regenSummaryBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const cacheKey = summaryCacheKey(rows, brand);
+      try { localStorage.removeItem(cacheKey); } catch {}
+      replaceSummaryPanel(renderSummaryPanel({}, { loading: true }));
+      try {
+        const stats = buildSummaryStats(rows, fields, insights, brand);
+        const summary = await fetchSummary(stats);
+        writeSummaryCache(cacheKey, summary);
+        replaceSummaryPanel(renderSummaryPanel(summary));
+        wireSummaryHandlers(rows, fields, insights, brand);
+      } catch (err) {
+        replaceSummaryPanel(renderSummaryPanel(null, { error: true, errorMessage: err.message }));
+      }
+    });
+  }
+
+  // ============================================================
   // Insights aggregation
   // ============================================================
   function buildInsights(rows, fields) {
@@ -1707,6 +2224,21 @@
       return;
     }
 
+    // AI Summary (placeholder rendered here; fetched & replaced asynchronously)
+    const summaryResult = loadSummary(rows, fields, insights, brand);
+    summaryResult.then(({ initialMarkup }) => {
+      // Patch markup AFTER initial render. We use a sentinel id to find the slot.
+      const slot = document.getElementById('aiSummarySlot');
+      if (slot) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = initialMarkup;
+        slot.replaceWith(wrap.firstElementChild);
+        // Wire the regenerate button if it's a final (non-loading) state
+        wireSummaryHandlers(rows, fields, insights, brand);
+      }
+    });
+    html += `<div id="aiSummarySlot"></div>`;
+
     // Key insights
     const topBrands = Object.entries(insights.brandFreq)
       .sort((a, b) => b[1] - a[1])
@@ -1970,7 +2502,17 @@
       const sorted = Array.from(insights.allUrls).sort();
       html += `
         <div class="panel">
-          <div class="panel-label">All URLs Referenced · ${insights.allUrls.size}</div>
+          <div class="panel-label panel-label-with-action">
+            <span>All URLs Referenced · ${insights.allUrls.size}</span>
+            <button class="btn btn-ghost btn-export-csv" id="exportUrlsCsvBtn" type="button" title="Download platform + URL pairs as CSV">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export CSV
+            </button>
+          </div>
           <div class="url-list">
             ${sorted.map(u => `
               <div class="url-row">
@@ -2279,6 +2821,52 @@
         a.download = `aeo-visibility${suffix}-${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
+      });
+    }
+
+    // CSV export — All URLs Referenced section
+    // Format: one row per (platform, URL) pair. Same URL cited by multiple
+    // platforms appears multiple times, one row each. Headers: Platform,URL.
+    const exportCsvBtn = document.getElementById('exportUrlsCsvBtn');
+    if (exportCsvBtn) {
+      exportCsvBtn.addEventListener('click', () => {
+        const fields = state.fields;
+        // Collect unique (platform, URL) pairs from all rows
+        const seen = new Set();
+        const pairs = [];
+        rows.forEach(r => {
+          const platform = normalizePlatform(fieldVal(r, fields.platform)) || 'unknown';
+          const urls = new Set();
+          extractUrls(r[fields.urls]).forEach(u => urls.add(u.url));
+          extractUrls(r[fields.sources]).forEach(u => urls.add(u.url));
+          urls.forEach(u => {
+            const key = platform + '||' + u;
+            if (seen.has(key)) return;
+            seen.add(key);
+            pairs.push({ platform, url: u });
+          });
+        });
+
+        // Sort: alphabetical by platform, then by URL — gives a predictable order
+        pairs.sort((a, b) => {
+          if (a.platform !== b.platform) return a.platform < b.platform ? -1 : 1;
+          return a.url < b.url ? -1 : 1;
+        });
+
+        // Build CSV. Wrap each field in quotes and escape inner quotes.
+        const csvEscape = (val) => '"' + String(val ?? '').replace(/"/g, '""') + '"';
+        const csvLines = ['Platform,URL'];
+        pairs.forEach(p => csvLines.push(csvEscape(p.platform) + ',' + csvEscape(p.url)));
+        const csv = csvLines.join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        const suffix = state.platformFilter === 'all' ? '' : `-${state.platformFilter}`;
+        a.download = `aeo-urls${suffix}-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(blobUrl);
       });
     }
   }

@@ -1110,6 +1110,12 @@
   }
 
   // True if the target brand string appears in this row's text.
+  // IMPORTANT: This only checks whether the brand name appears anywhere in
+  // the AI response text for this row. It does NOT check whether the cited
+  // domains themselves talk about the brand. The brand could be mentioned
+  // in one part of the response while completely unrelated domains are
+  // cited in another part. Treat the result as "co-occurrence in response",
+  // not "this domain talks about the brand."
   function rowMentionsBrand(row, fields, targetBrandLower) {
     if (!targetBrandLower) return false;
     const haystack = (
@@ -1118,6 +1124,58 @@
       fieldVal(row, fields.competitorAnalysis)
     ).toLowerCase();
     return haystack.includes(targetBrandLower);
+  }
+
+  // ============================================================
+  // Infrastructure / CDN / asset domain detection
+  // These domains are referenced for plumbing — hosting images, files,
+  // scripts, analytics — not because the *site* itself is relevant content.
+  // They should NEVER be flagged as "co-cited with brand" because they
+  // appear in essentially every response regardless of subject.
+  // ============================================================
+  function isInfrastructureDomain(domain) {
+    const d = String(domain || '').toLowerCase();
+    if (!d) return false;
+
+    // Common CDN / hosting / asset / analytics patterns
+    if (/\.cloudfront\.net$/.test(d)) return true;
+    if (/\.akamaihd\.net$/.test(d)) return true;
+    if (/\.akamaized\.net$/.test(d)) return true;
+    if (/\.amazonaws\.com$/.test(d)) return true;
+    if (/\.s3\..*\.amazonaws\.com$/.test(d)) return true;
+    if (/\.fastly\.net$/.test(d)) return true;
+    if (/\.cdn\.cloudflare\.net$/.test(d)) return true;
+    if (/\.azureedge\.net$/.test(d)) return true;
+    if (/\.googleusercontent\.com$/.test(d)) return true;
+    if (/\.gstatic\.com$/.test(d)) return true;
+    if (/\.googleapis\.com$/.test(d)) return true;
+    if (/\.ggpht\.com$/.test(d)) return true;
+    if (/\.cloudinary\.com$/.test(d)) return true;
+    if (/\.imgix\.net$/.test(d)) return true;
+    if (/\.jsdelivr\.net$/.test(d)) return true;
+    if (/\.unpkg\.com$/.test(d)) return true;
+    if (/\.ctfassets\.net$/.test(d)) return true;          // Contentful CDN
+    if (/\.netlify\.app$/.test(d)) return true;
+    if (/\.vercel\.app$/.test(d)) return true;
+    if (/\.herokuapp\.com$/.test(d)) return true;
+    if (/\.firebaseapp\.com$/.test(d)) return true;
+    if (/\.web\.app$/.test(d)) return true;
+    if (/\.pages\.dev$/.test(d)) return true;              // Cloudflare Pages
+    if (/\.googletagmanager\.com$/.test(d)) return true;
+    if (/\.doubleclick\.net$/.test(d)) return true;
+    if (/\.google-analytics\.com$/.test(d)) return true;
+    if (/\.shopifycdn\.com$/.test(d)) return true;
+    if (/\.wp\.com$/.test(d)) return true;                 // WordPress CDN
+    if (/\.wordpress\.com$/.test(d) && /^[a-z0-9-]+\.wp\.com/.test(d)) return true;
+
+    // Generic "assets" / "static" / "media" / "files" subdomains
+    // (Only when used as a leaf prefix on an unfamiliar TLD or as bare hosting)
+    if (/^(assets|static|cdn|media|files|images|img)\./.test(d) && /\.(net|so|app|io|co)$/.test(d)) {
+      // e.g., assets.super.so, assets.foo.io — generic asset hosting
+      return true;
+    }
+
+    return false;
   }
 
   // ============================================================
@@ -1170,7 +1228,11 @@
           acc[d].count += 1;
           if (meta.query) acc[d].queries.add(meta.query);
           acc[d].platforms.add(meta.platform);
-          if (meta.brandMentioned) acc[d].brandMentions += 1;
+          // Only credit a brand co-occurrence if this domain is content,
+          // not infrastructure. CDNs and asset hosts shouldn't get the flag.
+          if (meta.brandMentioned && !isInfrastructureDomain(d)) {
+            acc[d].brandMentions += 1;
+          }
         }
 
         // Track the URL itself, even if multiple URLs from the same domain
@@ -1582,6 +1644,25 @@
         </div>
       </div>`;
 
+    // AI Summary slot — markup is patched in asynchronously after fetch.
+    // Only show when we have a target brand AND data to summarize.
+    const targetBrandDisplayForSummary = state.rows[0]
+      ? String(fieldVal(state.rows[0], state.fields.brand) || '').trim()
+      : '';
+    if (targetBrandDisplayForSummary && totalDomains > 0) {
+      html += `<div id="aiSummarySlot"></div>`;
+      const summaryPromise = loadSummary(targetBrandDisplayForSummary);
+      summaryPromise.then(({ initialMarkup }) => {
+        const slot = document.getElementById('aiSummarySlot');
+        if (slot) {
+          const wrap = document.createElement('div');
+          wrap.innerHTML = initialMarkup;
+          slot.replaceWith(wrap.firstElementChild);
+          wireSummaryHandlers(targetBrandDisplayForSummary);
+        }
+      });
+    }
+
     // Distribution stacked bar
     if (presentCats.length > 0) {
       html += `
@@ -1620,22 +1701,22 @@
 
       html += `
         <div class="panel">
-          <div class="panel-label">Brand Position in the Landscape</div>
+          <div class="panel-label">Brand Co-Citation Footprint</div>
           <div class="brand-pos">
             <div class="bp-tile win">
-              <div class="bp-k">↑ Sites Mentioning Your Brand</div>
+              <div class="bp-k">↑ Co-cited with brand</div>
               <div class="bp-v">${bp.withBrand}</div>
-              <div class="bp-sub">Out of ${bp.totalDomains} domains in your citation landscape, ${bp.withBrand} are sites that have already mentioned <strong>${escapeHtml(targetBrandDisplay)}</strong> in at least one query.</div>
+              <div class="bp-sub">Domains that appeared in at least one AI response that also mentioned <strong>${escapeHtml(targetBrandDisplay)}</strong>. This is a co-occurrence signal — these domains showed up alongside your brand in AI answers, not necessarily on the domains' own websites.</div>
             </div>
             <div class="bp-tile gap">
-              <div class="bp-k">↓ Outreach Opportunities</div>
+              <div class="bp-k">↓ Not yet co-cited</div>
               <div class="bp-v">${bp.withoutBrand}</div>
-              <div class="bp-sub">Domains being cited by AI engines that have <em>not</em> mentioned your brand. These are the highest-leverage outreach targets — they're already authoritative in your space.</div>
+              <div class="bp-sub">Domains cited by AI engines that have never appeared in a response mentioning your brand. These are candidate outreach targets — they're already authoritative in your space but your brand isn't surfacing alongside them yet.</div>
             </div>
             <div class="bp-tile neutral">
-              <div class="bp-k">Brand Coverage Rate</div>
+              <div class="bp-k">Co-citation Rate</div>
               <div class="bp-v">${bp.totalDomains > 0 ? Math.round((bp.withBrand / bp.totalDomains) * 100) : 0}%</div>
-              <div class="bp-sub">Share of cited domains that include a mention of your brand. Higher means you're well-distributed across the landscape.</div>
+              <div class="bp-sub">Share of cited domains that have co-occurred with your brand in AI responses. Higher means your brand is showing up alongside a wider slice of the citation landscape.</div>
             </div>
           </div>
         </div>`;
@@ -1757,7 +1838,7 @@
                       </svg>
                       <span class="dom">${escapeHtml(d.domain)}</span>
                       ${d.hasBrand
-                        ? `<span class="brand-tick" title="Mentioned your brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>`
+                        ? `<span class="brand-tick" title="Co-cited with your brand — this domain was referenced in an AI response that also mentioned your brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>`
                         : ''}
                       <span class="ctn" title="Cited in ${d.count} ${d.count === 1 ? 'query' : 'queries'}">${d.count}×</span>
                       <a class="ext" href="https://${escapeHtml(d.domain)}" target="_blank" rel="noopener"
@@ -1793,12 +1874,12 @@
             ${CATEGORIES.map(c => `<option value="${c.key}">${escapeHtml(c.label)}</option>`).join('')}
           </select>
           ${showBrandColumn ? `
-          <select id="brandFilter">
-            <option value="all">Any mention status</option>
-            <option value="yes">Mentioned brand</option>
-            <option value="no">Not yet mentioned brand</option>
+          <select id="brandFilter" title="Filter by co-occurrence with your brand in AI responses">
+            <option value="all">Any co-citation status</option>
+            <option value="yes">Co-cited with brand</option>
+            <option value="no">Not co-cited</option>
           </select>` : ''}
-          <button class="btn btn-ghost" id="exportBtn" type="button">Export JSON</button>
+          <button class="btn btn-ghost" id="exportBtn" type="button">Export CSV</button>
         </div>
         <div style="overflow-x: auto;">
           <table class="detail-table" id="detailTable">
@@ -1806,7 +1887,7 @@
               <tr>
                 <th>Domain</th>
                 <th>Category</th>
-                ${showBrandColumn ? '<th>Mentioned Brand</th>' : ''}
+                ${showBrandColumn ? '<th title="Whether this domain was cited in an AI response that also mentioned your brand. This does not mean the site itself talks about your brand.">Co-cited&nbsp;w/&nbsp;Brand</th>' : ''}
                 <th>Citations</th>
               </tr>
             </thead>
@@ -1827,7 +1908,7 @@
                       </td>
                       ${showBrandColumn ? `
                       <td>
-                        <span class="dt-brand ${d.hasBrand ? 'yes' : 'no'}">
+                        <span class="dt-brand ${d.hasBrand ? 'yes' : 'no'}" title="${d.hasBrand ? 'Cited in at least one AI response that also mentioned your brand' : 'Never cited in a response that mentioned your brand'}">
                           ${d.hasBrand ? '✓ Yes' : '— No'}
                         </span>
                       </td>` : ''}
@@ -1888,47 +1969,43 @@
 
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        const data = {
-          exportedAt: new Date().toISOString(),
-          targetBrand: state.rows[0] ? fieldVal(state.rows[0], state.fields.brand) : '',
-          totalDomains: state.categorized.length,
-          totalCitations: state.categorized.reduce((s, d) => s + d.count, 0),
-          categories: CATEGORIES.map(c => ({
-            label: c.label,
-            domains: state.grouped[c.key].map(d => ({
-              domain: d.domain,
-              count: d.count,
-              mentionedBrand: d.hasBrand,
-              urls: (d.urls || []).map(u => ({
-                url: u.url,
-                title: u.title,
-                queries: u.queries,
-                platforms: u.platforms,
-              })),
-            })),
-          })),
-          allDomains: state.categorized.map(d => ({
-            domain: d.domain,
-            category: CAT_BY_KEY[d.category]?.label || 'Other',
-            count: d.count,
-            mentionedBrand: d.hasBrand,
-            queries: d.queries,
-            platforms: d.platforms,
-            urls: (d.urls || []).map(u => ({
-              url: u.url,
-              title: u.title,
-              queries: u.queries,
-              platforms: u.platforms,
-            })),
-          })),
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
+        const hasBrand = !!state.targetBrand;
+
+        // Build the column list. Brand column appears only when a target brand exists.
+        const headers = ['Domain', 'Category', 'Citations'];
+        if (hasBrand) headers.push('Co-cited with Brand');
+        headers.push('Queries', 'Platforms');
+
+        // CSV escape: wrap every field in quotes, double-up any inner quotes.
+        const csvEscape = (val) => '"' + String(val ?? '').replace(/"/g, '""') + '"';
+
+        // Sort the same way the on-screen table sorts (citations desc) so the
+        // CSV order matches what the user is looking at.
+        const sorted = state.categorized.slice().sort((a, b) => b.count - a.count);
+
+        const lines = [headers.map(csvEscape).join(',')];
+        sorted.forEach(d => {
+          const categoryLabel = CAT_BY_KEY[d.category]?.label || 'Other';
+          const queries  = (d.queries  || []).join('; ');
+          const platforms = (d.platforms || []).map(p => {
+            const opt = PLATFORM_OPTIONS.find(o => o.key === p);
+            return opt ? opt.label : p.toUpperCase();
+          }).join('; ');
+
+          const row = [d.domain, categoryLabel, d.count];
+          if (hasBrand) row.push(d.hasBrand ? 'Yes' : 'No');
+          row.push(queries, platforms);
+          lines.push(row.map(csvEscape).join(','));
+        });
+
+        const csv = lines.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `aeo-categorization-${new Date().toISOString().split('T')[0]}.json`;
+        a.href = blobUrl;
+        a.download = `aeo-categorization-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(blobUrl);
       });
     }
   }
@@ -1995,6 +2072,242 @@
             </div>` : ''}
         </div>
       </div>`;
+  }
+
+  // ============================================================
+  // AI Summary — webhook config + cache + render
+  // Tailored to the categorization landscape: composition, outreach
+  // opportunities, platform information diets, brand co-citation footprint.
+  // ============================================================
+
+  // Set this to your real n8n endpoint when ready. Empty = panel shows
+  // an "unavailable" state without breaking anything else.
+  const SUMMARY_WEBHOOK = 'https://n8n-smartmarketer.duckdns.org/webhook/summary-categorization';
+
+  function summaryCacheKey(rows, brand) {
+    const firstDate = rows[0] ? String(fieldVal(rows[0], state.fields?.date) || '') : '';
+    return `aeo:summary:categorization:${String(brand || '').toLowerCase()}:${rows.length}:${firstDate}`;
+  }
+
+  function readSummaryCache(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) { return null; }
+  }
+
+  function writeSummaryCache(key, summary) {
+    try { localStorage.setItem(key, JSON.stringify(summary)); } catch (e) {}
+  }
+
+  // Distill the categorization data into a compact payload for the LLM.
+  // Focus on landscape composition, not raw scan rows.
+  function buildSummaryStats(brand) {
+    const categorized = state.categorized || [];
+    const grouped = state.grouped || {};
+    const totalDomains = categorized.length;
+    const withBrand = categorized.filter(d => d.hasBrand).length;
+
+    // Category distribution
+    const distribution = CATEGORIES.map(c => ({
+      category: c.label,
+      domains: (grouped[c.key] || []).length,
+      pct: totalDomains > 0
+        ? Math.round(((grouped[c.key] || []).length / totalDomains) * 1000) / 10
+        : 0,
+    })).filter(d => d.domains > 0);
+
+    // Top cited domains overall (most-cited 15 — gives LLM context to spot
+    // recurring authorities)
+    const topCited = categorized
+      .slice()
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15)
+      .map(d => ({
+        domain: d.domain,
+        category: CAT_BY_KEY[d.category]?.label || 'Other',
+        citations: d.count,
+        coCitedWithBrand: d.hasBrand,
+      }));
+
+    // High-leverage outreach: top-cited domains NOT yet co-cited with brand.
+    // These are the "warm prospects" — authoritative but the brand isn't
+    // showing up alongside them yet.
+    const outreachTargets = categorized
+      .filter(d => !d.hasBrand)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+      .map(d => ({
+        domain: d.domain,
+        category: CAT_BY_KEY[d.category]?.label || 'Other',
+        citations: d.count,
+      }));
+
+    // Per-platform breakdown of citation sources
+    const platformBreakdown = (state.rowMeta && state.domainCategoryMap)
+      ? buildPerPlatform(state.rowMeta, state.fields, state.domainCategoryMap).map(p => ({
+          platform: p.label,
+          totalDomains: p.totalDomains,
+          topCategories: CATEGORIES
+            .map(c => ({ category: c.label, domains: p.categoryCounts[c.key] || 0 }))
+            .filter(c => c.domains > 0)
+            .sort((a, b) => b.domains - a.domains)
+            .slice(0, 4),
+        }))
+      : [];
+
+    return {
+      brand: brand,
+      landscapeSize: {
+        totalDomains,
+        coCitedWithBrand: withBrand,
+        outreachOpportunities: totalDomains - withBrand,
+        coCitationRatePct: totalDomains > 0 ? Math.round((withBrand / totalDomains) * 100) : 0,
+      },
+      categoryDistribution: distribution,
+      platformBreakdown: platformBreakdown,
+      topCitedDomains: topCited,
+      topOutreachTargets: outreachTargets,
+    };
+  }
+
+  async function fetchSummary(stats) {
+    if (!SUMMARY_WEBHOOK) throw new Error('Summary webhook not configured');
+    const response = await fetch(SUMMARY_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify(stats),
+    });
+    if (!response.ok) throw new Error('Webhook returned HTTP ' + response.status);
+    return await response.json();
+  }
+
+  function renderSummaryPanel(summary, opts = {}) {
+    const isLoading = opts.loading;
+    const isError = opts.error;
+    const generatedAt = summary?.generatedAt
+      ? new Date(summary.generatedAt).toLocaleString()
+      : '';
+    const hasContent = summary && (summary.topFinding || summary.keyOpportunity);
+
+    let inner = '';
+    if (isError && !hasContent) {
+      inner = `
+        <div class="summary-error">
+          <em>AI summary unavailable</em> — ${escapeHtml(opts.errorMessage || 'Could not reach the summary service.')} You can still review the full report below.
+        </div>`;
+    } else if (!hasContent && !isLoading) {
+      inner = `
+        <div class="summary-error">
+          <em>AI summary unavailable</em> — Summary endpoint not configured. You can still review the full report below.
+        </div>`;
+    } else {
+      const s = summary || {};
+      inner = `
+        <div class="summary-content">
+          ${s.topFinding ? `
+            <div class="summary-section top">
+              <div class="sec-label">Top Finding</div>
+              <div class="summary-text">${escapeHtml(s.topFinding)}</div>
+            </div>` : ''}
+          ${s.keyOpportunity ? `
+            <div class="summary-section opp">
+              <div class="sec-label">Key Opportunity</div>
+              <div class="summary-text">${escapeHtml(s.keyOpportunity)}</div>
+            </div>` : ''}
+          ${s.keyRisk ? `
+            <div class="summary-section risk">
+              <div class="sec-label">Key Risk</div>
+              <div class="summary-text">${escapeHtml(s.keyRisk)}</div>
+            </div>` : ''}
+          ${s.recommendations && s.recommendations.length > 0 ? `
+            <div class="summary-section">
+              <div class="sec-label">Recommendations</div>
+              <ol class="recommendations">
+                ${s.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+              </ol>
+            </div>` : ''}
+        </div>
+        <div class="summary-loading-overlay">
+          <div class="loading-card-inner">
+            <div class="spinner-inline"></div>
+            <div class="loading-text">Generating insights…</div>
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="ai-summary ${isLoading ? 'loading' : ''} ${isError ? 'error' : ''}" id="aiSummaryPanel">
+        <div class="summary-header">
+          <div class="summary-label">AI Summary</div>
+          <div class="summary-meta">
+            ${generatedAt ? `Generated ${escapeHtml(generatedAt)}` : ''}
+            ${SUMMARY_WEBHOOK ? '<button class="regen-btn" id="regenSummaryBtn" type="button">Regenerate</button>' : ''}
+          </div>
+        </div>
+        ${inner}
+      </div>`;
+  }
+
+  async function loadSummary(brand) {
+    const rows = state.rows || [];
+    const cacheKey = summaryCacheKey(rows, brand);
+    const cached = readSummaryCache(cacheKey);
+
+    if (cached) {
+      return { initialMarkup: renderSummaryPanel(cached), cached: true };
+    }
+    if (!SUMMARY_WEBHOOK) {
+      return { initialMarkup: renderSummaryPanel(null), cached: false };
+    }
+
+    const loadingMarkup = renderSummaryPanel({}, { loading: true });
+
+    setTimeout(async () => {
+      try {
+        const stats = buildSummaryStats(brand);
+        const summary = await fetchSummary(stats);
+        writeSummaryCache(cacheKey, summary);
+        replaceSummaryPanel(renderSummaryPanel(summary));
+        wireSummaryHandlers(brand);
+      } catch (err) {
+        console.error('Summary fetch failed:', err);
+        replaceSummaryPanel(renderSummaryPanel(null, { error: true, errorMessage: err.message }));
+      }
+    }, 50);
+
+    return { initialMarkup: loadingMarkup, cached: false };
+  }
+
+  function replaceSummaryPanel(markup) {
+    const existing = document.getElementById('aiSummaryPanel');
+    if (!existing) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = markup;
+    existing.replaceWith(wrap.firstElementChild);
+  }
+
+  function wireSummaryHandlers(brand) {
+    const btn = document.getElementById('regenSummaryBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const rows = state.rows || [];
+      const cacheKey = summaryCacheKey(rows, brand);
+      try { localStorage.removeItem(cacheKey); } catch {}
+      replaceSummaryPanel(renderSummaryPanel({}, { loading: true }));
+      try {
+        const stats = buildSummaryStats(brand);
+        const summary = await fetchSummary(stats);
+        writeSummaryCache(cacheKey, summary);
+        replaceSummaryPanel(renderSummaryPanel(summary));
+        wireSummaryHandlers(brand);
+      } catch (err) {
+        replaceSummaryPanel(renderSummaryPanel(null, { error: true, errorMessage: err.message }));
+      }
+    });
   }
 
   function escapeHtml(s) {
