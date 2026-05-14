@@ -8,17 +8,896 @@
 <link rel="stylesheet" href="shared/tokens.css" />
 
 <style>
-  .source-section { margin-bottom: 40px; }
+  .source-section { margin-bottom: 32px; }
 
-  .report-empty {
-    padding: 60px 32px;
+  /* Loading state */
+  .loading-card {
+    padding: 48px 32px;
+    text-align: center;
+    background: var(--bg-1);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+  }
+  .loading-card .spinner {
+    display: inline-block;
+    width: 28px; height: 28px;
+    border: 3px solid var(--line-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: cr-spin 0.8s linear infinite;
+    margin-bottom: 18px;
+  }
+  @keyframes cr-spin { to { transform: rotate(360deg); } }
+  .loading-card .ttl {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .loading-card .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Headline */
+  .cr-headline {
+    text-align: center;
+    padding: 36px 24px 32px;
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cr-headline::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .cr-headline .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .cr-headline .ttl {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+    color: var(--ink);
+  }
+  .cr-headline .ttl em { color: var(--accent); font-style: italic; }
+  .cr-headline .meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .cr-headline .meta .dot {
+    width: 3px; height: 3px;
+    background: var(--ink-faint);
+    border-radius: 50%;
+  }
+
+  /* Panel primitive */
+  .panel {
     background: var(--bg-1);
     border: 1px solid var(--line);
     border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .panel-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-label::before { content: '//'; color: var(--accent); }
+
+  .panel-label.panel-label-with-action {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .panel-label.panel-label-with-action::before {
+    flex-shrink: 0;
+  }
+  .panel-label.panel-label-with-action > span:first-of-type {
+    flex: 1;
+  }
+
+  .btn-export-csv {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    color: var(--ink-mute);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-export-csv:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg-3);
+  }
+  .btn-export-csv svg { flex-shrink: 0; }
+
+  /* ---------- Headliner cards (3-up) ---------- */
+  .headliners {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .headliner {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .headliner.threat {
+    background: linear-gradient(135deg, rgba(217,122,111,0.06) 0%, transparent 100%);
+    border-color: rgba(217,122,111,0.32);
+    border-left: 3px solid var(--bad);
+  }
+  .headliner.adjacent {
+    background: linear-gradient(135deg, rgba(232,184,106,0.06) 0%, transparent 100%);
+    border-color: rgba(232,184,106,0.32);
+    border-left: 3px solid var(--accent);
+  }
+  .headliner.rising {
+    background: linear-gradient(135deg, rgba(127,191,140,0.06) 0%, transparent 100%);
+    border-color: rgba(127,191,140,0.32);
+    border-left: 3px solid var(--ok);
+  }
+  .headliner .h-tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .headliner.threat .h-tag { color: var(--bad); }
+  .headliner.adjacent .h-tag { color: var(--accent); }
+  .headliner.rising .h-tag { color: var(--ok); }
+  .headliner .h-name {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 8px;
+    word-break: break-word;
+  }
+  .headliner .h-stat {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.04em;
+    line-height: 1.55;
+  }
+  .headliner .h-stat strong { color: var(--ink); font-weight: 500; }
+  .headliner.threat .h-stat strong { color: var(--bad); }
+  .headliner.adjacent .h-stat strong { color: var(--accent); }
+  .headliner.rising .h-stat strong { color: var(--ok); }
+
+  /* ---------- Leaderboard ---------- */
+  .leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lb-row {
+    display: grid;
+    grid-template-columns: 30px minmax(170px, 1.3fr) 1fr 70px 130px 110px;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 14px;
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .lb-row:hover { border-color: var(--line-strong); }
+  .lb-row.you {
+    background: linear-gradient(135deg, rgba(232,184,106,0.08) 0%, transparent 100%);
+    border-color: var(--accent-line);
+    border-left: 3px solid var(--accent);
+  }
+  .lb-rank {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink-faint);
     text-align: center;
+    font-weight: 500;
+  }
+  .lb-row.you .lb-rank { color: var(--accent); }
+  .lb-row:nth-child(1) .lb-rank { color: var(--accent); font-weight: 600; }
+  .lb-name {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--ink);
+    line-height: 1.25;
+    word-break: break-word;
+  }
+  .lb-name .you-tag {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-line);
+    padding: 2px 7px;
+    border-radius: 999px;
+    vertical-align: middle;
+  }
+  .lb-bar-wrap {
+    min-width: 0;
+  }
+  .lb-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .lb-bar > div {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-lo), var(--accent));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+  .lb-row.you .lb-bar > div {
+    background: linear-gradient(90deg, var(--accent), #ffd700);
+  }
+  .lb-bar-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+  .lb-co {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-align: right;
+    line-height: 1.4;
+  }
+  .lb-co strong {
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 13px;
+  }
+  .lb-co .co-label {
+    display: block;
+    font-size: 9.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+  .lb-co .co-row {
+    margin-bottom: 4px;
+  }
+  .lb-co .co-row:last-child { margin-bottom: 0; }
+  .lb-pos {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink-mute);
+    text-align: center;
+    line-height: 1.3;
+  }
+  .lb-pos strong {
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 16px;
+  }
+  .lb-pos .pos-label {
+    display: block;
+    font-size: 9.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .lb-pos.dim { opacity: 0.4; }
+  .lb-platforms {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .lb-platforms .p-pill {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--ink-mute);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 2px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- Head-to-head matrix ---------- */
+  .h2h-wrap {
+    overflow-x: auto;
+    margin: 0 -8px;
+    padding: 0 8px;
+  }
+  .h2h {
+    display: grid;
+    gap: 4px;
+    min-width: max-content;
+  }
+  .h2h-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.5fr) repeat(var(--comp-count, 5), 72px);
+    gap: 4px;
+    align-items: stretch;
+  }
+  .h2h-head { margin-bottom: 4px; }
+  .h2h-head .h2h-cell {
+    background: transparent;
+    border: none;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 6px 2px;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .h2h-head .h2h-q { text-align: left; padding-left: 4px; }
+  .h2h-head .h2h-cell.you {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .h2h-q {
+    padding: 10px 12px;
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+  }
+  .h2h-cell {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--bg-0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    min-height: 42px;
+    transition: transform 0.12s, border-color 0.12s;
+  }
+  .h2h-cell:hover {
+    transform: scale(1.05);
+    border-color: var(--line-strong);
+    z-index: 1;
+  }
+  .h2h-cell.hit {
+    background: rgba(127,191,140,0.14);
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+  .h2h-cell.miss {
+    color: var(--ink-faint);
+    opacity: 0.45;
+  }
+  .h2h-cell.you-hit {
+    background: rgba(232,184,106,0.16);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .h2h-cell.you-miss {
+    background: rgba(217,122,111,0.10);
+    border-color: rgba(217,122,111,0.30);
+    color: var(--bad);
+    opacity: 0.7;
+  }
+  .h2h-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-wrap: wrap;
+  }
+  .h2h-legend .lg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .h2h-legend .swatch {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+  .h2h-legend .swatch.hit { background: rgba(127,191,140,0.14); border-color: var(--ok); }
+  .h2h-legend .swatch.miss { background: var(--bg-0); border-color: var(--line); }
+  .h2h-legend .swatch.you-hit { background: rgba(232,184,106,0.16); border-color: var(--accent); }
+  .h2h-legend .swatch.you-miss { background: rgba(217,122,111,0.10); border-color: rgba(217,122,111,0.30); }
+
+  /* ---------- Platform dominance ---------- */
+  .pd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .pd-card {
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .pd-platform {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 20px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .pd-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .pd-callout {
+    padding: 10px 12px;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    margin: 4px 0 14px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--ink);
+    border-left: 3px solid var(--line-strong);
+  }
+  .pd-callout.win {
+    background: linear-gradient(135deg, rgba(127,191,140,0.06) 0%, transparent 100%);
+    border-left-color: var(--ok);
+    color: var(--ink);
+  }
+  .pd-callout.close {
+    background: linear-gradient(135deg, rgba(232,184,106,0.06) 0%, transparent 100%);
+    border-left-color: var(--accent);
+    color: var(--ink);
+  }
+  .pd-callout.gap {
+    background: linear-gradient(135deg, rgba(217,122,111,0.06) 0%, transparent 100%);
+    border-left-color: var(--bad);
+    color: var(--ink);
+  }
+  .pd-callout.neutral {
     color: var(--ink-mute);
   }
-  .report-empty .ico {
+  .pd-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pd-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+  }
+  .pd-row:first-child { border-top: none; padding-top: 0; }
+  .pd-row .pd-rank {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    width: 18px;
+    text-align: right;
+  }
+  .pd-row .pd-name {
+    flex: 1;
+    color: var(--ink);
+    font-size: 13.5px;
+    word-break: break-word;
+  }
+  .pd-row.you .pd-name { color: var(--accent); font-weight: 500; }
+  .pd-row.you .pd-rank { color: var(--accent); }
+  .pd-row .pd-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+  }
+
+  /* ---------- Per-competitor deep dive (collapsible) ---------- */
+  .dd-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dd-card {
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .dd-card:hover { border-color: var(--line-strong); }
+  .dd-head {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .dd-head .chev {
+    width: 14px; height: 14px;
+    color: var(--ink-faint);
+    transition: transform 0.18s, color 0.12s;
+  }
+  .dd-card.expanded .dd-head .chev {
+    transform: rotate(90deg);
+    color: var(--accent);
+  }
+  .dd-head .name {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 19px;
+    color: var(--ink);
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .dd-head .stats {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.04em;
+  }
+  .dd-head .stats .stat strong { color: var(--ink); font-weight: 500; }
+  .dd-head .tier {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid;
+  }
+  .dd-head .tier.direct {
+    color: var(--bad);
+    border-color: rgba(217,122,111,0.4);
+    background: rgba(217,122,111,0.08);
+  }
+  .dd-head .tier.adjacent {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    background: var(--accent-glow);
+  }
+  .dd-body {
+    display: none;
+    padding: 0 16px 16px 44px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .dd-card.expanded .dd-body {
+    display: block;
+  }
+  .dd-body .dd-section {
+    margin-bottom: 14px;
+  }
+  .dd-body .dd-section:last-child { margin-bottom: 0; }
+  .dd-body .dd-section .sec-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .dd-body .q-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dd-body .q-item {
+    padding: 6px 0 6px 10px;
+    border-left: 2px solid var(--line);
+    font-size: 13px;
+    color: var(--ink-mute);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .dd-body .q-item.with-you {
+    border-left-color: var(--accent);
+    color: var(--ink);
+  }
+  .dd-body .q-item.with-you::after {
+    content: ' · you appeared too';
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-left: 4px;
+  }
+  .dd-body .platform-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .dd-body .p-pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-mute);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .dd-body .snippet {
+    padding: 12px 14px;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--ink-mute);
+    line-height: 1.55;
+    font-style: italic;
+  }
+  .dd-body .co-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .dd-body .co-tile {
+    padding: 12px 14px;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+  .dd-body .co-tile-v {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .dd-body .co-tile-k {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.3;
+  }
+
+  /* ---------- Messaging Differentiator panel ---------- */
+  .msg-panel {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .msg-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+  .msg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .msg-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .msg-label::before {
+    content: '◇';
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .msg-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .msg-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .msg-pattern {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 14px;
+    padding: 18px 20px;
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    align-items: start;
+  }
+  .msg-pattern-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    padding-top: 4px;
+  }
+  .msg-pattern-body { min-width: 0; }
+  .msg-theme {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.4;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    margin-bottom: 10px;
+  }
+  .msg-comps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .msg-comps-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-right: 2px;
+  }
+  .msg-comp-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .msg-angle {
+    padding: 10px 12px;
+    background: var(--accent-glow);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--radius-sm);
+  }
+  .msg-angle-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .msg-angle-text {
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .msg-error {
+    padding: 14px 18px;
+    background: var(--bg-0);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-sm);
+    color: var(--ink-mute);
+    font-size: 13px;
+    text-align: center;
+  }
+  .msg-error em { color: var(--accent); font-style: italic; }
+  .msg-panel.loading .msg-content {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .msg-loading-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(21, 24, 31, 0.4);
+    backdrop-filter: blur(2px);
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .msg-panel.loading .msg-loading-overlay { display: flex; }
+
+  /* ---------- Empty / error states ---------- */
+  .empty-state {
+    padding: 60px 32px;
+    text-align: center;
+    color: var(--ink-mute);
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .empty-state .ico {
     font-family: var(--serif);
     font-style: italic;
     font-size: 64px;
@@ -26,18 +905,41 @@
     margin-bottom: 12px;
     line-height: 1;
   }
-  .report-empty h3 {
+  .empty-state h3 {
     font-family: var(--serif);
     font-style: italic;
     font-weight: 400;
-    font-size: 24px;
+    font-size: 22px;
     color: var(--ink);
     margin-bottom: 8px;
   }
-  .report-empty p { max-width: 420px; margin: 0 auto; font-size: 14px; }
 
   #reportRoot { display: none; }
   #reportRoot.show { display: block; }
+
+  /* Filtered-out competitors note */
+  .filter-note {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: var(--bg-0);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+  }
+  .filter-note strong { color: var(--ink-mute); font-weight: 500; }
+
+  @media (max-width: 880px) {
+    .headliners { grid-template-columns: 1fr; }
+    .lb-row { grid-template-columns: 24px 1fr; gap: 8px; }
+    .lb-row > *:nth-child(n+3) { grid-column: 2; padding-top: 4px; }
+    .h2h-row { grid-template-columns: minmax(160px, 1fr) repeat(var(--comp-count, 5), 60px); }
+    .dd-head { grid-template-columns: 14px 1fr; gap: 8px; }
+    .dd-head .stats { grid-column: 2; }
+    .panel { padding: 20px; }
+  }
 </style>
 </head>
 
@@ -55,17 +957,16 @@
   </header>
 
   <section class="hero">
-    <div class="eyebrow">Step 02 — Competitor Report</div>
-    <h1>See who's <em>winning the queries</em> you care about.</h1>
-    <p>A side-by-side analysis of how competing brands are showing up across your queries. Continue from a previous scan, or upload a CSV to start fresh.</p>
+    <div class="eyebrow">Step 03 — Competitor Report</div>
+    <h1>Who's <em>winning</em> the AI conversation?</h1>
+    <p>Find the brands that surface in AI answers about your topic, see where they're dominating, and identify the queries where you're losing ground.</p>
   </section>
 
+  <!-- Source: continue panel + drop zone -->
   <section class="source-section" id="sourceSection">
     <div id="continueSlot"></div>
-
     <div id="uploadSlot">
       <div class="or-divider" id="orDivider" style="display:none;">Or upload a CSV</div>
-
       <label class="drop-zone" id="dropZone">
         <input type="file" id="csvInput" accept=".csv,text/csv" />
         <div class="dz-icon">
@@ -81,37 +982,59 @@
     </div>
   </section>
 
-  <section class="card" id="reportRoot" style="padding: 48px 32px;">
-    <div class="section-head">
-      <h2>Competitor <em>analysis</em></h2>
-      <div class="status-pill" id="reportMeta">0 ROWS</div>
-    </div>
-    <div class="report-empty">
-      <div class="ico">∅</div>
-      <h3>Competitor analysis goes here</h3>
-      <p>The competitor breakdown (share of voice, head-to-head matchups, gap analysis) will be built into this section.</p>
-    </div>
-  </section>
+  <section id="reportRoot"></section>
 
 </div>
 
 <script src="shared/state.js"></script>
 <script>
+  // ============================================================
+  // Config
+  // ============================================================
+
+  // n8n endpoint that classifies brand mentions into direct/adjacent/incidental.
+  // While empty, the page falls back to a simple "2+ mentions" filter.
+  const COMPETITOR_FILTER_WEBHOOK = 'https://n8n-smartmarketer.duckdns.org/webhook/filter-competitors';
+
+  // n8n endpoint that generates the AI summary for this report.
+  // While empty, the summary panel shows an "unavailable" state.
+  const SUMMARY_WEBHOOK = 'https://n8n-smartmarketer.duckdns.org/webhook/summary-competitor';
+
+  const PLATFORM_OPTIONS = [
+    { key: 'gpt',        label: 'GPT' },
+    { key: 'perplexity', label: 'Perplexity' },
+    { key: 'ai_mode',    label: 'AI Mode' },
+  ];
+
+  // ============================================================
+  // State
+  // ============================================================
+  const state = {
+    rows: null,
+    fields: null,
+    targetBrand: '',
+    targetBrandLower: '',
+    competitors: null,       // [{ name, type, mentionCount, queries, platforms, coWithYouRate, avgPosition, snippets }]
+    filteredOut: null,        // [{ name, count }] — brands the LLM tagged as incidental
+  };
+
   const els = {
     continueSlot: document.getElementById('continueSlot'),
     orDivider:    document.getElementById('orDivider'),
     dropZone:     document.getElementById('dropZone'),
     csvInput:     document.getElementById('csvInput'),
     reportRoot:   document.getElementById('reportRoot'),
-    reportMeta:   document.getElementById('reportMeta'),
   };
 
+  // ============================================================
+  // Init
+  // ============================================================
   function init() {
     const ctx = ToolState.getScanContext();
     if (ctx && ctx.rows.length > 0) {
       renderContinuePanel(ctx);
       els.orDivider.style.display = 'flex';
-      loadRows(ctx.rows, { brand: ctx.brand, queries: ctx.queries });
+      processRows(ctx.rows);
     }
   }
 
@@ -129,67 +1052,65 @@
         </div>
         <div class="cp-text">
           <div class="cp-title">Loaded from your latest scan</div>
-          <div class="cp-meta">${ctx.brand || 'Brand'} · ${queryCount} ${queryLabel} · ${ctx.rows.length} rows · ${when}</div>
+          <div class="cp-meta">${escapeHtml(ctx.brand || 'Brand')} · ${queryCount} ${queryLabel} · ${ctx.rows.length} rows · ${when}</div>
         </div>
         <button class="btn btn-ghost" id="clearStateBtn" type="button">Use a different file</button>
-      </div>
-    `;
+      </div>`;
     document.getElementById('clearStateBtn').addEventListener('click', () => {
       ToolState.clear();
       els.continueSlot.innerHTML = '';
       els.orDivider.style.display = 'none';
       els.reportRoot.classList.remove('show');
+      els.reportRoot.innerHTML = '';
     });
   }
 
-  els.dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    els.dropZone.classList.add('is-dragover');
-  });
-  els.dropZone.addEventListener('dragleave', () => {
-    els.dropZone.classList.remove('is-dragover');
-  });
-  els.dropZone.addEventListener('drop', (e) => {
+  // ============================================================
+  // CSV upload
+  // ============================================================
+  els.dropZone.addEventListener('dragover', e => { e.preventDefault(); els.dropZone.classList.add('is-dragover'); });
+  els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('is-dragover'));
+  els.dropZone.addEventListener('drop', e => {
     e.preventDefault();
     els.dropZone.classList.remove('is-dragover');
     const file = e.dataTransfer.files[0];
     if (file) handleCsvFile(file);
   });
-  els.csvInput.addEventListener('change', (e) => {
+  els.csvInput.addEventListener('change', e => {
     const file = e.target.files[0];
     if (file) handleCsvFile(file);
   });
 
   function handleCsvFile(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const rows = parseCsv(e.target.result);
-      loadRows(rows, { brand: '', queries: [] });
+    reader.onload = e => {
+      const rows = parseCsvToObjects(e.target.result);
+      processRows(rows);
     };
     reader.readAsText(file);
   }
 
-  function parseCsv(text) {
+  function parseCsvToObjects(text) {
     const lines = [];
-    let cur = '', inQuotes = false, row = [];
+    let cur = '', inQ = false, row = [];
     for (let i = 0; i < text.length; i++) {
-      const ch = text[i];
-      if (inQuotes) {
-        if (ch === '"' && text[i + 1] === '"') { cur += '"'; i++; }
-        else if (ch === '"') { inQuotes = false; }
-        else { cur += ch; }
+      const c = text[i];
+      if (inQ) {
+        if (c === '"' && text[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else cur += c;
       } else {
-        if (ch === '"') inQuotes = true;
-        else if (ch === ',') { row.push(cur); cur = ''; }
-        else if (ch === '\n' || ch === '\r') {
+        if (c === '"') inQ = true;
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n' || c === '\r') {
           if (cur !== '' || row.length) { row.push(cur); lines.push(row); row = []; cur = ''; }
-          if (ch === '\r' && text[i + 1] === '\n') i++;
-        } else { cur += ch; }
+          if (c === '\r' && text[i+1] === '\n') i++;
+        } else cur += c;
       }
     }
     if (cur !== '' || row.length) { row.push(cur); lines.push(row); }
     if (lines.length === 0) return [];
-    const headers = lines[0].map(h => h.trim());
+    const headers = lines[0];
     return lines.slice(1).map(arr => {
       const obj = {};
       headers.forEach((h, i) => { obj[h] = arr[i] ?? ''; });
@@ -197,12 +1118,1229 @@
     });
   }
 
-  function loadRows(rows, meta) {
-    els.reportRoot.classList.add('show');
-    els.reportMeta.textContent = `${rows.length} ROWS`;
-    console.log('[Competitor Report] loaded rows:', rows.length, 'meta:', meta);
+  // ============================================================
+  // Field resolution
+  // ============================================================
+  function resolveFields(sampleRow) {
+    const keys = Object.keys(sampleRow);
+    const norm = k => String(k).trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+    const find = (...patterns) => {
+      for (const k of keys) {
+        const n = norm(k);
+        for (const p of patterns) if (p.test(n)) return k;
+      }
+      return null;
+    };
+    return {
+      brand:              find(/^brand$/, /brand name/, /^company$/),
+      platform:           find(/^platform$/, /channel/, /^source platform$/),
+      query:              find(/^query$/, /search query/, /^question$/),
+      rawOutput:          find(/raw output/, /model output/, /^response$/),
+      brandPositions:     find(/brand positions?/, /brand postions?/),
+      competitorAnalysis: find(/competitors? analysis/, /competitive analysis/),
+      mentions: keys
+        .filter(k => /mention/i.test(k))
+        .sort((a, b) => {
+          const an = parseInt((a.match(/\d+/) || [0])[0]);
+          const bn = parseInt((b.match(/\d+/) || [0])[0]);
+          return an - bn;
+        }),
+    };
   }
 
+  function fieldVal(row, key, fallback = '') {
+    if (!key) return fallback;
+    const v = row[key];
+    if (v === undefined || v === null) return fallback;
+    return typeof v === 'string' ? v.trim() : v;
+  }
+  function normalizePlatform(v) { return String(v || '').trim().toLowerCase().replace(/[\s-]+/g, '_'); }
+  function parseScore(v) {
+    if (v === null || v === undefined || v === '') return null;
+    const s = String(v).replace(/%/g, '').trim();
+    if (s === '' || isNaN(s)) return null;
+    return Math.round(parseFloat(s));
+  }
+
+  // ============================================================
+  // Brand name normalization
+  // Two strings should match if they refer to the same brand. e.g.,
+  // "Midi Health" / "midi health" / "Midi" / "midi" all = "midi".
+  // We use a normalized key for matching while preserving the original
+  // canonical-cased display name (whichever form appeared first).
+  // ============================================================
+  function brandKey(name) {
+    return String(name || '')
+      .toLowerCase()
+      .replace(/\b(inc|llc|ltd|corp|co|the|health|wellness|clinic)\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  // ============================================================
+  // Collect mentions across all rows
+  // Returns: Map<brandKey, { displayName, count, queries: Set, platforms: Set, rows: Array }>
+  // ============================================================
+  function collectMentions(rows, fields, targetBrandLower) {
+    const map = new Map();
+    rows.forEach(row => {
+      const mentions = fields.mentions
+        .map(k => String(fieldVal(row, k) || '').trim())
+        .filter(m => m && m !== '0' && m.length >= 2);
+
+      const seenInRow = new Set();
+      mentions.forEach(m => {
+        const key = brandKey(m);
+        if (!key) return;
+        // Skip the target brand — this report is about competitors, not us
+        if (key === brandKey(targetBrandLower)) return;
+        if (seenInRow.has(key)) return;
+        seenInRow.add(key);
+
+        if (!map.has(key)) {
+          map.set(key, {
+            displayName: m,
+            count: 0,
+            queries: new Set(),
+            platforms: new Set(),
+            rows: [],
+          });
+        }
+        const entry = map.get(key);
+        entry.count += 1;
+        const q = String(fieldVal(row, fields.query) || '').trim();
+        if (q) entry.queries.add(q);
+        const p = normalizePlatform(fieldVal(row, fields.platform));
+        if (p) entry.platforms.add(p);
+        entry.rows.push(row);
+      });
+    });
+    return map;
+  }
+
+  // ============================================================
+  // Compute co-occurrence rates between each competitor and the target brand.
+  // Two metrics, intentionally separate:
+  //   - shareOfTheirs: of the responses mentioning the competitor, what %
+  //     also mentioned you?  (When low → competitor is being mentioned
+  //     INSTEAD of you. When high → you're being mentioned alongside.)
+  //   - shareOfYours: of the responses mentioning you, what % also
+  //     mentioned the competitor?  (When high → you're being seen as
+  //     alternatives. When low → they're not yet "your competition" in
+  //     the AI's mind.)
+  // ============================================================
+  function computeCoOccurrence(competitors, fields, targetBrandLower, youCount) {
+    competitors.forEach(c => {
+      let withYou = 0;
+      c.rows.forEach(row => {
+        const hay = (
+          fieldVal(row, fields.rawOutput) + ' ' +
+          fields.mentions.map(k => fieldVal(row, k)).join(' ') + ' ' +
+          fieldVal(row, fields.competitorAnalysis)
+        ).toLowerCase();
+        if (hay.includes(targetBrandLower)) withYou += 1;
+      });
+      c.coWithYouCount = withYou;
+      c.shareOfTheirs  = c.count > 0   ? Math.round((withYou / c.count)   * 100) : 0;
+      c.shareOfYours   = youCount > 0  ? Math.round((withYou / youCount)  * 100) : 0;
+      // Keep old field for backwards compatibility internally
+      c.coWithYouRate = c.shareOfTheirs;
+    });
+  }
+
+  // ============================================================
+  // Filter competitors via webhook (or fallback)
+  // The webhook receives [{brand, count, ...context}] and returns
+  // [{brand, type}] where type ∈ direct_competitor | adjacent_brand | incidental
+  // ============================================================
+  async function filterCompetitors(candidates, targetBrand, queries) {
+    if (!COMPETITOR_FILTER_WEBHOOK) {
+      // Fallback: 2+ mentions counts as competitor, everything else incidental.
+      // Mark anything mentioned in ≥30% of queries as "direct", else "adjacent".
+      const queryCount = queries.length || 1;
+      return candidates.map(c => {
+        const queriesPct = (c.queries.size / queryCount) * 100;
+        if (c.count < 2) return { ...c, type: 'incidental' };
+        if (queriesPct >= 30) return { ...c, type: 'direct_competitor' };
+        return { ...c, type: 'adjacent_brand' };
+      });
+    }
+
+    const payload = {
+      targetBrand: targetBrand,
+      topicContext: queries.slice(0, 5),   // sample queries to give the LLM the space
+      candidates: candidates.map(c => ({
+        brand: c.displayName,
+        mentionCount: c.count,
+        queryCoverage: c.queries.size,
+      })),
+    };
+
+    const response = await fetch(COMPETITOR_FILTER_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Filter webhook HTTP ' + response.status);
+    const result = await response.json();
+    const arr = Array.isArray(result) ? result : (Array.isArray(result?.results) ? result.results : []);
+    const typeByKey = {};
+    arr.forEach(item => {
+      const k = brandKey(item.brand || item.name);
+      if (k) typeByKey[k] = normalizeCompetitorType(item.type || item.category);
+    });
+
+    return candidates.map(c => ({
+      ...c,
+      type: typeByKey[brandKey(c.displayName)] || 'incidental',
+    }));
+  }
+
+  function normalizeCompetitorType(t) {
+    const norm = String(t || '').toLowerCase().trim();
+    if (/^direct/.test(norm) || /competitor/.test(norm)) return 'direct_competitor';
+    if (/adjacent|partner|complement/.test(norm)) return 'adjacent_brand';
+    if (/incidental|noise|unrelated/.test(norm)) return 'incidental';
+    return 'incidental';
+  }
+
+  // ============================================================
+  // Extract a representative competitor snippet from competitor-analysis text
+  // ============================================================
+  function findSnippet(competitor, fields) {
+    const cName = competitor.displayName.toLowerCase();
+    for (const row of competitor.rows) {
+      const text = fieldVal(row, fields.competitorAnalysis);
+      if (!text) continue;
+      const lower = text.toLowerCase();
+      const idx = lower.indexOf(cName);
+      if (idx === -1) continue;
+      // Grab ~200 chars centered on the mention
+      const start = Math.max(0, idx - 80);
+      const end = Math.min(text.length, idx + cName.length + 140);
+      let snip = text.substring(start, end);
+      if (start > 0) snip = '…' + snip;
+      if (end < text.length) snip = snip + '…';
+      return snip;
+    }
+    return '';
+  }
+
+  // ============================================================
+  // PROCESS pipeline
+  // ============================================================
+  async function processRows(rows) {
+    if (!rows || rows.length === 0) {
+      showEmpty('No data to display', 'The dataset is empty.');
+      return;
+    }
+
+    state.rows = rows;
+    state.fields = resolveFields(rows[0]);
+    state.targetBrand = String(fieldVal(rows[0], state.fields.brand) || '').trim();
+    state.targetBrandLower = state.targetBrand.toLowerCase();
+
+    if (!state.targetBrand) {
+      showEmpty('Target brand missing', 'This scan doesn\'t have a brand field. Competitor analysis needs a brand to compare against.');
+      return;
+    }
+
+    // Collect mentions
+    const allMentions = collectMentions(rows, state.fields, state.targetBrandLower);
+    if (allMentions.size === 0) {
+      showEmpty('No competitors detected', 'No other brands were mentioned in the AI responses. Try a scan with broader queries.');
+      return;
+    }
+
+    // Drop very-rare mentions (1 hit) before sending to LLM — they're almost
+    // always incidental and not worth paying the LLM to classify.
+    const candidates = Array.from(allMentions.values())
+      .filter(c => c.count >= 2)
+      .sort((a, b) => b.count - a.count);
+
+    // Track filtered-out ones for the disclosure note
+    const singletons = Array.from(allMentions.values()).filter(c => c.count < 2);
+
+    showLoading(candidates.length, !!COMPETITOR_FILTER_WEBHOOK);
+
+    try {
+      const allQueries = Array.from(new Set(rows.map(r => fieldVal(r, state.fields.query)).filter(Boolean)));
+
+      // Compute target brand's mention count upfront — used to compute
+      // bidirectional co-occurrence rates and shared in render() too.
+      let youCount = 0;
+      const youQueriesSet = new Set();
+      const youPlatformsSet = new Set();
+      rows.forEach(row => {
+        const hay = (
+          fieldVal(row, state.fields.rawOutput) + ' ' +
+          state.fields.mentions.map(k => fieldVal(row, k)).join(' ') + ' ' +
+          fieldVal(row, state.fields.competitorAnalysis)
+        ).toLowerCase();
+        if (hay.includes(state.targetBrandLower)) {
+          youCount += 1;
+          const q = String(fieldVal(row, state.fields.query) || '').trim();
+          if (q) youQueriesSet.add(q);
+          const p = normalizePlatform(fieldVal(row, state.fields.platform));
+          if (p) youPlatformsSet.add(p);
+        }
+      });
+      state.youCount = youCount;
+      state.youQueries = youQueriesSet;
+      state.youPlatforms = youPlatformsSet;
+
+      const classified = await filterCompetitors(candidates, state.targetBrand, allQueries);
+      // Compute co-occurrence (both directions) with target brand
+      computeCoOccurrence(classified, state.fields, state.targetBrandLower, youCount);
+      // Attach snippets and average position
+      classified.forEach(c => {
+        c.snippet = findSnippet(c, state.fields);
+
+        // Position metrics — TWO related but distinct numbers:
+        //
+        // (a) avgCompetitorPosition: For each row where this competitor was
+        //     mentioned, find their position in the Mention 1..N list.
+        //     That's their "rank" in the AI's response. Average across rows.
+        //
+        // (b) yourPositionWhenTheyAppear: When this competitor appeared, what
+        //     was YOUR position in the same response (if any)? Pulls from the
+        //     'Brand Postions' field which tracks the user's brand's rank.
+        const compName = c.displayName.toLowerCase();
+        const compPositions = [];
+        const yourPositionsHere = [];
+        c.rows.forEach(r => {
+          // Find competitor in the mentions list ordering
+          for (let i = 0; i < state.fields.mentions.length; i++) {
+            const m = String(fieldVal(r, state.fields.mentions[i]) || '').trim().toLowerCase();
+            if (m && (m === compName || brandKey(m) === brandKey(compName))) {
+              compPositions.push(i + 1);
+              break;
+            }
+          }
+          // Your brand's position in this row, if recorded
+          const p = parseScore(fieldVal(r, state.fields.brandPositions));
+          if (p !== null) yourPositionsHere.push(p);
+        });
+        c.avgCompetitorPosition = compPositions.length > 0
+          ? Math.round((compPositions.reduce((s, p) => s + p, 0) / compPositions.length) * 10) / 10
+          : null;
+        c.yourPositionWhenTheyAppear = yourPositionsHere.length > 0
+          ? Math.round((yourPositionsHere.reduce((s, p) => s + p, 0) / yourPositionsHere.length) * 10) / 10
+          : null;
+        // Legacy alias used elsewhere
+        c.avgPosition = c.avgCompetitorPosition;
+      });
+
+      // Also compute target brand's own average position across all rows
+      // where it was given a position rank.
+      const yourAllPositions = [];
+      rows.forEach(r => {
+        const hay = (
+          fieldVal(r, state.fields.rawOutput) + ' ' +
+          state.fields.mentions.map(k => fieldVal(r, k)).join(' ') + ' ' +
+          fieldVal(r, state.fields.competitorAnalysis)
+        ).toLowerCase();
+        if (!hay.includes(state.targetBrandLower)) return;
+        const p = parseScore(fieldVal(r, state.fields.brandPositions));
+        if (p !== null) yourAllPositions.push(p);
+      });
+      state.yourAvgPosition = yourAllPositions.length > 0
+        ? Math.round((yourAllPositions.reduce((s, p) => s + p, 0) / yourAllPositions.length) * 10) / 10
+        : null;
+
+      // Keep only direct + adjacent for the report; incidental gets hidden
+      state.competitors = classified
+        .filter(c => c.type === 'direct_competitor' || c.type === 'adjacent_brand')
+        .sort((a, b) => b.count - a.count);
+      state.filteredOut = [
+        ...classified.filter(c => c.type === 'incidental').map(c => ({ name: c.displayName, count: c.count })),
+        ...singletons.map(c => ({ name: c.displayName, count: c.count })),
+      ];
+
+      if (state.competitors.length === 0) {
+        showEmpty('No competitors classified', 'The LLM didn\'t classify any of the mentioned brands as competitors. Either your space is uncrowded, or the brands mentioned are mostly incidental references.');
+        return;
+      }
+
+      render();
+    } catch (err) {
+      console.error(err);
+      showError('Competitor classification failed', err.message);
+    }
+  }
+
+  function showLoading(count, isLive) {
+    els.reportRoot.classList.add('show');
+    els.reportRoot.innerHTML = `
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <div class="ttl">Identifying competitors from ${count} mentioned ${count === 1 ? 'brand' : 'brands'}…</div>
+        <div class="meta">${isLive ? 'Classifying with LLM' : 'Running fallback filter · webhook not configured'}</div>
+      </div>`;
+  }
+
+  function showEmpty(title, body) {
+    els.reportRoot.classList.add('show');
+    els.reportRoot.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">∅</div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(body)}</p>
+      </div>`;
+  }
+
+  function showError(title, body) {
+    els.reportRoot.classList.add('show');
+    els.reportRoot.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">✕</div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(body || 'Unknown error')}</p>
+      </div>`;
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function render() {
+    const comps = state.competitors;
+    const totalCompetitorMentions = comps.reduce((s, c) => s + c.count, 0);
+    const totalRows = state.rows.length;
+    const allQueries = Array.from(new Set(state.rows.map(r => fieldVal(r, state.fields.query)).filter(Boolean)));
+
+    // Use pre-computed values from processRows() — see state.youCount etc.
+    const youCount = state.youCount;
+    const youQueries = state.youQueries;
+    const youPlatforms = state.youPlatforms;
+
+    const topComp = comps[0];
+
+    let html = '';
+
+    // ---------- Headline ----------
+    const headlineParts = topComp
+      ? (() => {
+          const diff = youCount > 0
+            ? topComp.count - youCount
+            : topComp.count;
+          if (diff > 0) {
+            return `<em>${escapeHtml(topComp.displayName)}</em> leads the AI conversation — ahead of you by <em>${diff}</em> ${diff === 1 ? 'mention' : 'mentions'}.`;
+          } else if (diff === 0) {
+            return `You're tied with <em>${escapeHtml(topComp.displayName)}</em> for top mentions.`;
+          } else {
+            return `You lead — <em>${escapeHtml(topComp.displayName)}</em> is your closest competitor.`;
+          }
+        })()
+      : `No clear competitor pattern identified.`;
+
+    html += `
+      <div class="cr-headline">
+        <div class="label">Competitive Landscape</div>
+        <div class="ttl">${headlineParts}</div>
+        <div class="meta">
+          <span>${comps.length} ${comps.length === 1 ? 'competitor' : 'competitors'}</span>
+          <span class="dot"></span>
+          <span>${totalCompetitorMentions} ${totalCompetitorMentions === 1 ? 'mention' : 'mentions'}</span>
+          <span class="dot"></span>
+          <span>across ${allQueries.length} ${allQueries.length === 1 ? 'query' : 'queries'}</span>
+          ${!COMPETITOR_FILTER_WEBHOOK ? '<span class="dot"></span><span style="color: var(--accent);">Fallback classifier</span>' : ''}
+        </div>
+      </div>`;
+
+    // ---------- Headliner cards (3 highlights) ----------
+    if (comps.length > 0) {
+      // Dominant Threat: top competitor by mention count
+      const dominant = comps[0];
+      // Adjacent Player: second-most-mentioned
+      const adjacent = comps[1];
+      // Rising Mention: competitor with high coverage (queries) but lower total — sneaky one
+      // Heuristic: highest queries/count ratio among the top 8, excluding #1
+      let rising = null;
+      const candidatesForRising = comps.slice(1, 8);
+      candidatesForRising.forEach(c => {
+        if (c.count < 2) return;
+        const ratio = c.queries.size / c.count;
+        if (!rising || ratio > (rising.queries.size / rising.count)) rising = c;
+      });
+
+      const renderHL = (c, klass, tag) => {
+        if (!c) return '';
+        const posPart = c.avgCompetitorPosition
+          ? `<br/>Avg position when cited: <strong>#${c.avgCompetitorPosition}</strong>`
+          : '';
+        return `
+          <div class="headliner ${klass}">
+            <div class="h-tag">${tag}</div>
+            <div class="h-name">${escapeHtml(c.displayName)}</div>
+            <div class="h-stat">
+              Mentioned in <strong>${c.count}</strong> ${c.count === 1 ? 'response' : 'responses'} · ${c.queries.size} of ${allQueries.length} ${allQueries.length === 1 ? 'query' : 'queries'}
+              ${posPart}
+              ${c.shareOfTheirs > 0
+                ? `<br/>You appear in <strong>${c.shareOfTheirs}%</strong> of their responses`
+                : '<br/>You never appear in their responses'}
+            </div>
+          </div>`;
+      };
+
+      html += `
+        <div class="headliners">
+          ${renderHL(dominant, 'threat', '★ Dominant Threat')}
+          ${adjacent ? renderHL(adjacent, 'adjacent', '◐ Close Second') : `<div class="headliner"><div class="h-tag">— No close second</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">Only one significant competitor.</div></div>`}
+          ${rising ? renderHL(rising, 'rising', '↗ Wide Coverage') : `<div class="headliner"><div class="h-tag">— No wide-coverage competitor</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">No competitor has unusually broad query reach.</div></div>`}
+        </div>`;
+    }
+
+    // ---------- AI Summary slot (injected async) ----------
+    html += `<div id="aiSummarySlot"></div>`;
+    const summaryPromise = loadSummary();
+    summaryPromise.then(({ initialMarkup }) => {
+      const slot = document.getElementById('aiSummarySlot');
+      if (slot) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = initialMarkup;
+        slot.replaceWith(wrap.firstElementChild);
+        wireSummaryHandlers();
+      }
+    });
+
+    // ---------- Messaging Differentiator slot (injected async) ----------
+    html += `<div id="messagingSlot"></div>`;
+    const messagingPromise = loadMessagingPanel();
+    messagingPromise.then(({ initialMarkup }) => {
+      const slot = document.getElementById('messagingSlot');
+      if (slot) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = initialMarkup;
+        slot.replaceWith(wrap.firstElementChild);
+        wireMessagingHandlers();
+      }
+    });
+
+    // ---------- Competitor Leaderboard ----------
+    const maxLBCount = Math.max(topComp ? topComp.count : 0, youCount, 1);
+
+    // Build combined list (competitors + target brand) sorted by mention count
+    const lbItems = [
+      ...comps.map(c => ({
+        name: c.displayName,
+        count: c.count,
+        queries: c.queries.size,
+        platforms: Array.from(c.platforms),
+        position: c.avgCompetitorPosition,
+        shareOfTheirs: c.shareOfTheirs,
+        shareOfYours: c.shareOfYours,
+        isYou: false,
+      })),
+      {
+        name: state.targetBrand,
+        count: youCount,
+        queries: youQueries.size,
+        platforms: Array.from(youPlatforms),
+        position: state.yourAvgPosition,
+        shareOfTheirs: null,
+        shareOfYours: null,
+        isYou: true,
+      },
+    ].sort((a, b) => b.count - a.count);
+
+    html += `
+      <div class="panel">
+        <div class="panel-label panel-label-with-action">
+          <span>Competitor Leaderboard</span>
+          <button class="btn btn-ghost btn-export-csv" id="exportLbCsvBtn" type="button" title="Download competitor data as CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+        <div class="leaderboard">
+          ${lbItems.map((c, i) => {
+            const pct = (c.count / maxLBCount) * 100;
+            const platforms = c.platforms.map(p => {
+              const opt = PLATFORM_OPTIONS.find(o => o.key === p);
+              return `<span class="p-pill">${escapeHtml(opt ? opt.label : p.toUpperCase())}</span>`;
+            }).join('');
+            const posCell = c.position !== null && c.position !== undefined
+              ? `<div class="lb-pos"><strong>#${c.position}</strong><span class="pos-label">Avg rank</span></div>`
+              : `<div class="lb-pos dim">—<span class="pos-label">No rank</span></div>`;
+            const coCell = c.isYou
+              ? `<div class="lb-co" style="opacity: 0.4;">—</div>`
+              : `<div class="lb-co">
+                  <div class="co-row"><strong>${c.shareOfTheirs}%</strong><span class="co-label" title="Of responses that mentioned this competitor, what % also mentioned you">You in theirs</span></div>
+                  <div class="co-row"><strong>${c.shareOfYours}%</strong><span class="co-label" title="Of responses that mentioned you, what % also mentioned this competitor">Them in yours</span></div>
+                </div>`;
+            return `
+              <div class="lb-row ${c.isYou ? 'you' : ''}">
+                <div class="lb-rank">${i + 1}</div>
+                <div class="lb-name">
+                  ${escapeHtml(c.name)}
+                  ${c.isYou ? '<span class="you-tag">You</span>' : ''}
+                </div>
+                <div class="lb-bar-wrap">
+                  <div class="lb-bar"><div style="width: ${pct.toFixed(1)}%;"></div></div>
+                  <div class="lb-bar-meta">${c.count} ${c.count === 1 ? 'mention' : 'mentions'} · ${c.queries} ${c.queries === 1 ? 'query' : 'queries'}</div>
+                </div>
+                ${posCell}
+                ${coCell}
+                <div class="lb-platforms">${platforms || '<span class="p-pill" style="opacity:0.4;">—</span>'}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>`;
+
+    // ---------- Head-to-Head Matrix ----------
+    // Build a matrix of [queries] × [top N competitors + you]
+    const top5Comps = comps.slice(0, 5);
+    if (top5Comps.length > 0 && allQueries.length > 0) {
+      // Compute presence: which queries did each comp/you appear in?
+      const presence = {};   // brandKey -> Set<query>
+      top5Comps.forEach(c => {
+        presence[brandKey(c.displayName)] = c.queries;
+      });
+      const youKey = brandKey(state.targetBrand);
+      presence[youKey] = youQueries;
+
+      const matrixCompsForHeader = [
+        ...top5Comps.map(c => ({ key: brandKey(c.displayName), name: c.displayName, isYou: false })),
+        { key: youKey, name: state.targetBrand, isYou: true },
+      ];
+
+      html += `
+        <div class="panel">
+          <div class="panel-label">Head-to-Head · Query Coverage</div>
+          <div class="h2h-wrap">
+            <div class="h2h">
+              <div class="h2h-row h2h-head" style="--comp-count: ${matrixCompsForHeader.length};">
+                <div class="h2h-cell h2h-q">Query</div>
+                ${matrixCompsForHeader.map(c => `
+                  <div class="h2h-cell ${c.isYou ? 'you' : ''}">${escapeHtml(c.name.length > 14 ? c.name.substring(0, 14) + '…' : c.name)}</div>
+                `).join('')}
+              </div>
+              ${allQueries.map(q => `
+                <div class="h2h-row" style="--comp-count: ${matrixCompsForHeader.length};">
+                  <div class="h2h-q">${escapeHtml(q.length > 80 ? q.substring(0, 80) + '…' : q)}</div>
+                  ${matrixCompsForHeader.map(c => {
+                    const present = presence[c.key] && presence[c.key].has(q);
+                    let cls;
+                    if (c.isYou) {
+                      cls = present ? 'you-hit' : 'you-miss';
+                    } else {
+                      cls = present ? 'hit' : 'miss';
+                    }
+                    const symbol = present ? '✓' : '—';
+                    const tipName = c.isYou ? 'You' : c.name;
+                    return `<div class="h2h-cell ${cls}" title="${escapeHtml(tipName)} on '${escapeHtml(q)}': ${present ? 'appeared' : 'not mentioned'}">${symbol}</div>`;
+                  }).join('')}
+                </div>
+              `).join('')}
+            </div>
+            <div class="h2h-legend">
+              <div class="lg-item"><span class="swatch you-hit"></span> You appeared</div>
+              <div class="lg-item"><span class="swatch you-miss"></span> You missed</div>
+              <div class="lg-item"><span class="swatch hit"></span> Competitor appeared</div>
+              <div class="lg-item"><span class="swatch miss"></span> Competitor absent</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ---------- Platform Dominance ----------
+    const platforms = Array.from(new Set(state.rows.map(r => normalizePlatform(fieldVal(r, state.fields.platform))).filter(Boolean)));
+    if (platforms.length > 1) {
+      // For each platform, count which competitors+you appeared
+      const perPlatform = platforms.map(p => {
+        const platformLabel = PLATFORM_OPTIONS.find(o => o.key === p)?.label || p.toUpperCase();
+        const counts = {};
+        // Count competitors
+        comps.forEach(c => {
+          let n = 0;
+          c.rows.forEach(r => {
+            if (normalizePlatform(fieldVal(r, state.fields.platform)) === p) n += 1;
+          });
+          if (n > 0) counts[c.displayName] = { count: n, isYou: false };
+        });
+        // Count target brand
+        let youOnPlatform = 0;
+        state.rows.forEach(row => {
+          if (normalizePlatform(fieldVal(row, state.fields.platform)) !== p) return;
+          const hay = (
+            fieldVal(row, state.fields.rawOutput) + ' ' +
+            state.fields.mentions.map(k => fieldVal(row, k)).join(' ') + ' ' +
+            fieldVal(row, state.fields.competitorAnalysis)
+          ).toLowerCase();
+          if (hay.includes(state.targetBrandLower)) youOnPlatform += 1;
+        });
+        if (youOnPlatform > 0) counts[state.targetBrand] = { count: youOnPlatform, isYou: true };
+
+        const sorted = Object.entries(counts)
+          .sort((a, b) => b[1].count - a[1].count)
+          .slice(0, 6);
+        return { platform: p, label: platformLabel, leaders: sorted };
+      });
+
+      html += `
+        <div class="panel">
+          <div class="panel-label">Platform Dominance</div>
+          <div class="pd-grid">
+            ${perPlatform.map(p => {
+              // Find the leader (top mention count on this platform)
+              const yourEntry = p.leaders.find(([_, info]) => info.isYou);
+              const yourCountOnPlatform = yourEntry ? yourEntry[1].count : 0;
+              const nonYouLeaders = p.leaders.filter(([_, info]) => !info.isYou);
+              const topNonYou = nonYouLeaders[0];
+
+              // Build a strategic callout
+              let callout = '';
+              let calloutClass = '';
+              if (p.leaders.length === 0) {
+                callout = 'No mentions detected on this engine.';
+                calloutClass = 'neutral';
+              } else if (yourCountOnPlatform === 0 && topNonYou) {
+                callout = `You're invisible here. ${escapeHtml(topNonYou[0])} leads with ${topNonYou[1].count} mentions.`;
+                calloutClass = 'gap';
+              } else if (!topNonYou) {
+                callout = `You own this engine with ${yourCountOnPlatform} mentions.`;
+                calloutClass = 'win';
+              } else if (yourCountOnPlatform >= topNonYou[1].count) {
+                const lead = yourCountOnPlatform - topNonYou[1].count;
+                callout = lead === 0
+                  ? `You're tied with ${escapeHtml(topNonYou[0])} (${yourCountOnPlatform} each).`
+                  : `You lead by ${lead} mention${lead === 1 ? '' : 's'} over ${escapeHtml(topNonYou[0])}.`;
+                calloutClass = 'win';
+              } else {
+                const gap = topNonYou[1].count - yourCountOnPlatform;
+                const ratio = yourCountOnPlatform > 0
+                  ? (topNonYou[1].count / yourCountOnPlatform).toFixed(1)
+                  : null;
+                callout = ratio
+                  ? `${escapeHtml(topNonYou[0])} leads by ${gap} (${ratio}× your ${yourCountOnPlatform}).`
+                  : `${escapeHtml(topNonYou[0])} leads with ${topNonYou[1].count} vs your ${yourCountOnPlatform}.`;
+                // If gap is small, frame it as close; if huge, frame it as struggling
+                calloutClass = (yourCountOnPlatform > 0 && yourCountOnPlatform >= topNonYou[1].count * 0.6)
+                  ? 'close'
+                  : 'gap';
+              }
+
+              return `
+                <div class="pd-card">
+                  <div class="pd-platform">${escapeHtml(p.label)}</div>
+                  <div class="pd-callout ${calloutClass}">${callout}</div>
+                  <div class="pd-list">
+                    ${p.leaders.length > 0 ? p.leaders.map(([name, info], i) => `
+                      <div class="pd-row ${info.isYou ? 'you' : ''}">
+                        <div class="pd-rank">${i + 1}.</div>
+                        <div class="pd-name">${escapeHtml(name)}${info.isYou ? ' <span class="you-tag" style="font-size:9px; padding: 1px 6px;">You</span>' : ''}</div>
+                        <div class="pd-count">${info.count}×</div>
+                      </div>
+                    `).join('') : '<div class="pd-row" style="opacity:0.5;"><div class="pd-name">No data on this engine</div></div>'}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>`;
+    }
+
+    // ---------- Per-Competitor Deep Dive (collapsible) ----------
+    html += `
+      <div class="panel">
+        <div class="panel-label">Per-Competitor Deep Dive</div>
+        <div class="dd-list">
+          ${comps.map((c, i) => {
+            const platforms = Array.from(c.platforms).map(p => {
+              const opt = PLATFORM_OPTIONS.find(o => o.key === p);
+              return `<span class="p-pill">${escapeHtml(opt ? opt.label : p.toUpperCase())}</span>`;
+            }).join('');
+            const queriesArr = Array.from(c.queries);
+
+            // Mark which queries you ALSO appeared in
+            const queryItems = queriesArr.map(q => {
+              const youInThis = youQueries.has(q);
+              return `<div class="q-item ${youInThis ? 'with-you' : ''}">"${escapeHtml(q)}"</div>`;
+            }).join('');
+
+            return `
+              <div class="dd-card" data-idx="${i}">
+                <div class="dd-head">
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 6 15 12 9 18"/>
+                  </svg>
+                  <div class="name">${escapeHtml(c.displayName)}</div>
+                  <div class="stats">
+                    <span class="tier ${c.type === 'direct_competitor' ? 'direct' : 'adjacent'}">${c.type === 'direct_competitor' ? 'Direct' : 'Adjacent'}</span>
+                    <span class="stat"><strong>${c.count}</strong> mentions</span>
+                    <span class="stat"><strong>${c.queries.size}</strong> queries</span>
+                    ${c.avgCompetitorPosition ? `<span class="stat">Avg <strong>#${c.avgCompetitorPosition}</strong></span>` : ''}
+                  </div>
+                </div>
+                <div class="dd-body">
+                  <div class="dd-section">
+                    <div class="sec-label">Shared visibility with you</div>
+                    <div class="co-grid">
+                      <div class="co-tile">
+                        <div class="co-tile-v">${c.shareOfTheirs}%</div>
+                        <div class="co-tile-k">Of their responses also mention you</div>
+                      </div>
+                      <div class="co-tile">
+                        <div class="co-tile-v">${c.shareOfYours}%</div>
+                        <div class="co-tile-k">Of your responses also mention them</div>
+                      </div>
+                    </div>
+                  </div>
+                  ${c.snippet ? `
+                    <div class="dd-section">
+                      <div class="sec-label">How AI describes them</div>
+                      <div class="snippet">${escapeHtml(c.snippet)}</div>
+                    </div>` : ''}
+                  <div class="dd-section">
+                    <div class="sec-label">Queries they appear in</div>
+                    <div class="q-list">${queryItems || '<div class="q-item">—</div>'}</div>
+                  </div>
+                  <div class="dd-section">
+                    <div class="sec-label">Platforms</div>
+                    <div class="platform-row">${platforms || '—'}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${state.filteredOut && state.filteredOut.length > 0 ? `
+          <div class="filter-note">
+            <strong>${state.filteredOut.length} ${state.filteredOut.length === 1 ? 'brand' : 'brands'} filtered out as incidental</strong> · Names like one-off mentions, doctors, study authors, or unrelated organizations not classified as competitors:
+            ${state.filteredOut.slice(0, 15).map(f => escapeHtml(f.name)).join(' · ')}${state.filteredOut.length > 15 ? ` · +${state.filteredOut.length - 15} more` : ''}
+          </div>` : ''}
+      </div>`;
+
+    els.reportRoot.innerHTML = html;
+    attachHandlers();
+  }
+
+  function attachHandlers() {
+    // Deep-dive expand
+    document.querySelectorAll('.dd-card .dd-head').forEach(head => {
+      head.addEventListener('click', () => {
+        head.closest('.dd-card').classList.toggle('expanded');
+      });
+    });
+
+    // CSV export — Competitor Leaderboard
+    const exportBtn = document.getElementById('exportLbCsvBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const csvEscape = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+        const headers = [
+          'Rank', 'Brand', 'Is You', 'Type',
+          'Mentions', 'Queries', 'Avg Position',
+          'You-in-Their-Responses %', 'Them-in-Your-Responses %',
+          'Platforms',
+        ];
+
+        const rows = [];
+        // Build combined list and sort by mention count
+        const combined = [
+          ...state.competitors.map(c => ({
+            name: c.displayName,
+            isYou: false,
+            type: c.type === 'direct_competitor' ? 'Direct' : 'Adjacent',
+            count: c.count,
+            queries: c.queries.size,
+            position: c.avgCompetitorPosition,
+            shareOfTheirs: c.shareOfTheirs,
+            shareOfYours: c.shareOfYours,
+            platforms: Array.from(c.platforms).map(p => {
+              const opt = PLATFORM_OPTIONS.find(o => o.key === p);
+              return opt ? opt.label : p.toUpperCase();
+            }).join('; '),
+          })),
+          {
+            name: state.targetBrand,
+            isYou: true,
+            type: 'Target Brand',
+            count: state.youCount,
+            queries: state.youQueries.size,
+            position: state.yourAvgPosition,
+            shareOfTheirs: null,
+            shareOfYours: null,
+            platforms: Array.from(state.youPlatforms).map(p => {
+              const opt = PLATFORM_OPTIONS.find(o => o.key === p);
+              return opt ? opt.label : p.toUpperCase();
+            }).join('; '),
+          },
+        ].sort((a, b) => b.count - a.count);
+
+        combined.forEach((c, i) => {
+          rows.push([
+            i + 1,
+            c.name,
+            c.isYou ? 'Yes' : 'No',
+            c.type,
+            c.count,
+            c.queries,
+            c.position !== null && c.position !== undefined ? `#${c.position}` : '',
+            c.shareOfTheirs !== null && c.shareOfTheirs !== undefined ? c.shareOfTheirs + '%' : '',
+            c.shareOfYours !== null && c.shareOfYours !== undefined ? c.shareOfYours + '%' : '',
+            c.platforms,
+          ]);
+        });
+
+        const lines = [headers.map(csvEscape).join(',')];
+        rows.forEach(r => lines.push(r.map(csvEscape).join(',')));
+        const csv = lines.join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `aeo-competitors-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(blobUrl);
+      });
+    }
+  }
+
+  // ============================================================
+  // AI Summary
+  // ============================================================
+  function summaryCacheKey() {
+    const rows = state.rows || [];
+    const firstDate = rows[0] ? String(fieldVal(rows[0], state.fields?.date) || '') : '';
+    return `aeo:summary:competitor:${state.targetBrandLower}:${rows.length}:${firstDate}`;
+  }
+
+  function readSummaryCache(key) {
+    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
+  }
+  function writeSummaryCache(key, s) {
+    try { localStorage.setItem(key, JSON.stringify(s)); } catch (e) {}
+  }
+
+  function buildSummaryStats() {
+    const comps = state.competitors || [];
+    const allQueries = Array.from(new Set(state.rows.map(r => fieldVal(r, state.fields.query)).filter(Boolean)));
+
+    return {
+      brand: state.targetBrand,
+      yourMentions: state.youCount,
+      yourQueriesCovered: state.youQueries.size,
+      yourAvgPosition: state.yourAvgPosition,
+      totalRows: state.rows.length,
+      totalQueries: allQueries.length,
+      competitors: comps.slice(0, 12).map(c => ({
+        name: c.displayName,
+        type: c.type,
+        mentions: c.count,
+        queriesCovered: c.queries.size,
+        platforms: Array.from(c.platforms),
+        avgPosition: c.avgCompetitorPosition,
+        shareOfTheirResponsesYouAlsoAppear: c.shareOfTheirs,
+        shareOfYourResponsesTheyAlsoAppear: c.shareOfYours,
+        snippet: c.snippet || null,
+      })),
+    };
+  }
+
+  async function fetchSummary(stats) {
+    if (!SUMMARY_WEBHOOK) throw new Error('Summary webhook not configured');
+    const r = await fetch(SUMMARY_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify(stats),
+    });
+    if (!r.ok) throw new Error('Summary webhook HTTP ' + r.status);
+    return await r.json();
+  }
+
+  function renderSummaryPanel(summary, opts = {}) {
+    const isLoading = opts.loading;
+    const isError = opts.error;
+    const generatedAt = summary?.generatedAt ? new Date(summary.generatedAt).toLocaleString() : '';
+    const hasContent = summary && (summary.topFinding || summary.keyOpportunity);
+
+    let inner = '';
+    if (isError && !hasContent) {
+      inner = `<div class="summary-error"><em>AI summary unavailable</em> — ${escapeHtml(opts.errorMessage || 'Could not reach the summary service.')} You can still review the full report below.</div>`;
+    } else if (!hasContent && !isLoading) {
+      inner = `<div class="summary-error"><em>AI summary unavailable</em> — Summary endpoint not configured. You can still review the full report below.</div>`;
+    } else {
+      const s = summary || {};
+      inner = `
+        <div class="summary-content">
+          ${s.topFinding ? `<div class="summary-section top"><div class="sec-label">Top Finding</div><div class="summary-text">${escapeHtml(s.topFinding)}</div></div>` : ''}
+          ${s.keyOpportunity ? `<div class="summary-section opp"><div class="sec-label">Key Opportunity</div><div class="summary-text">${escapeHtml(s.keyOpportunity)}</div></div>` : ''}
+          ${s.keyRisk ? `<div class="summary-section risk"><div class="sec-label">Key Risk</div><div class="summary-text">${escapeHtml(s.keyRisk)}</div></div>` : ''}
+          ${s.recommendations && s.recommendations.length > 0 ? `<div class="summary-section"><div class="sec-label">Recommendations</div><ol class="recommendations">${s.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ol></div>` : ''}
+        </div>
+        <div class="summary-loading-overlay">
+          <div class="loading-card-inner">
+            <div class="spinner-inline"></div>
+            <div class="loading-text">Generating insights…</div>
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="ai-summary ${isLoading ? 'loading' : ''} ${isError ? 'error' : ''}" id="aiSummaryPanel">
+        <div class="summary-header">
+          <div class="summary-label">AI Summary</div>
+          <div class="summary-meta">
+            ${generatedAt ? `Generated ${escapeHtml(generatedAt)}` : ''}
+            ${SUMMARY_WEBHOOK ? '<button class="regen-btn" id="regenSummaryBtn" type="button">Regenerate</button>' : ''}
+          </div>
+        </div>
+        ${inner}
+      </div>`;
+  }
+
+  async function loadSummary() {
+    const cacheKey = summaryCacheKey();
+    const cached = readSummaryCache(cacheKey);
+    if (cached) return { initialMarkup: renderSummaryPanel(cached), cached: true };
+    if (!SUMMARY_WEBHOOK) return { initialMarkup: renderSummaryPanel(null), cached: false };
+
+    const loadingMarkup = renderSummaryPanel({}, { loading: true });
+    setTimeout(async () => {
+      try {
+        const stats = buildSummaryStats();
+        const summary = await fetchSummary(stats);
+        writeSummaryCache(cacheKey, summary);
+        replaceSummaryPanel(renderSummaryPanel(summary));
+        wireSummaryHandlers();
+      } catch (err) {
+        replaceSummaryPanel(renderSummaryPanel(null, { error: true, errorMessage: err.message }));
+      }
+    }, 50);
+    return { initialMarkup: loadingMarkup, cached: false };
+  }
+
+  function replaceSummaryPanel(markup) {
+    const existing = document.getElementById('aiSummaryPanel');
+    if (!existing) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = markup;
+    existing.replaceWith(wrap.firstElementChild);
+  }
+
+  function wireSummaryHandlers() {
+    const btn = document.getElementById('regenSummaryBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const key = summaryCacheKey();
+      try { localStorage.removeItem(key); } catch {}
+      replaceSummaryPanel(renderSummaryPanel({}, { loading: true }));
+      try {
+        const stats = buildSummaryStats();
+        const summary = await fetchSummary(stats);
+        writeSummaryCache(key, summary);
+        replaceSummaryPanel(renderSummaryPanel(summary));
+        wireSummaryHandlers();
+      } catch (err) {
+        replaceSummaryPanel(renderSummaryPanel(null, { error: true, errorMessage: err.message }));
+      }
+    });
+  }
+
+  // ============================================================
+  // Messaging Differentiator panel
+  // Pulls positioning patterns out of competitor analysis text and surfaces
+  // strategic angles. LLM-driven through a separate webhook.
+  // ============================================================
+
+  // Set this to your real n8n endpoint. While empty, the panel hides.
+  const MESSAGING_WEBHOOK = 'https://n8n-smartmarketer.duckdns.org/webhook/messaging-differentiator';
+
+  function messagingCacheKey() {
+    const rows = state.rows || [];
+    const firstDate = rows[0] ? String(fieldVal(rows[0], state.fields?.date) || '') : '';
+    return `aeo:messaging:competitor:${state.targetBrandLower}:${rows.length}:${firstDate}`;
+  }
+
+  function readMessagingCache(k) {
+    try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; }
+  }
+  function writeMessagingCache(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+  }
+
+  // Build a focused payload: competitor names + the analysis text snippets
+  // they appear in. We do NOT send full rows — the LLM only needs the
+  // strategic-positioning narrative chunks.
+  function buildMessagingPayload() {
+    const comps = state.competitors || [];
+
+    // Gather all unique competitor analysis paragraphs that mention each comp
+    const compEvidence = comps.slice(0, 10).map(c => {
+      const seenTexts = new Set();
+      const snippets = [];
+      c.rows.forEach(row => {
+        const text = String(fieldVal(row, state.fields.competitorAnalysis) || '').trim();
+        if (!text || seenTexts.has(text)) return;
+        seenTexts.add(text);
+        // Keep snippets reasonably sized — first 600 chars per row
+        snippets.push(text.length > 600 ? text.substring(0, 600) + '…' : text);
+      });
+      return {
+        name: c.displayName,
+        type: c.type,
+        analysisSnippets: snippets.slice(0, 4),  // cap per-competitor to control payload
+      };
+    }).filter(c => c.analysisSnippets.length > 0);
+
+    return {
+      brand: state.targetBrand,
+      competitors: compEvidence,
+    };
+  }
+
+  async function fetchMessaging(payload) {
+    if (!MESSAGING_WEBHOOK) throw new Error('Messaging webhook not configured');
+    const r = await fetch(MESSAGING_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error('Messaging webhook HTTP ' + r.status);
+    return await r.json();
+  }
+
+  function renderMessagingPanel(data, opts = {}) {
+    // If webhook isn't configured, don't render the panel at all — keeps the
+    // page clean for users who haven't set this up yet.
+    if (!MESSAGING_WEBHOOK && !opts.loading && !data) {
+      return '';
+    }
+
+    const isLoading = opts.loading;
+    const isError = opts.error;
+    const generatedAt = data?.generatedAt ? new Date(data.generatedAt).toLocaleString() : '';
+    const patterns = data?.patterns || [];
+    const hasContent = patterns.length > 0;
+
+    let inner = '';
+    if (isError && !hasContent) {
+      inner = `<div class="msg-error"><em>Positioning analysis unavailable</em> — ${escapeHtml(opts.errorMessage || 'Could not reach the messaging service.')}</div>`;
+    } else if (!hasContent && !isLoading) {
+      inner = `<div class="msg-error"><em>No positioning patterns detected</em> — The competitor analysis text in this scan didn't surface clear themes. Try a scan with more diverse queries.</div>`;
+    } else {
+      inner = `
+        <div class="msg-content">
+          ${patterns.map((p, i) => `
+            <div class="msg-pattern">
+              <div class="msg-pattern-num">${String(i + 1).padStart(2, '0')}</div>
+              <div class="msg-pattern-body">
+                <div class="msg-theme">${escapeHtml(p.theme || '')}</div>
+                ${p.competitors && p.competitors.length > 0 ? `
+                  <div class="msg-comps">
+                    <span class="msg-comps-label">Held by:</span>
+                    ${p.competitors.map(name => `<span class="msg-comp-pill">${escapeHtml(name)}</span>`).join('')}
+                  </div>` : ''}
+                ${p.yourAngle ? `
+                  <div class="msg-angle">
+                    <span class="msg-angle-label">Your counter-angle</span>
+                    <div class="msg-angle-text">${escapeHtml(p.yourAngle)}</div>
+                  </div>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="msg-loading-overlay">
+          <div class="loading-card-inner">
+            <div class="spinner-inline"></div>
+            <div class="loading-text">Analyzing positioning…</div>
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="msg-panel ${isLoading ? 'loading' : ''} ${isError ? 'error' : ''}" id="messagingPanel">
+        <div class="msg-header">
+          <div class="msg-label">Messaging Differentiators</div>
+          <div class="msg-meta">
+            ${generatedAt ? `Generated ${escapeHtml(generatedAt)}` : ''}
+            ${MESSAGING_WEBHOOK ? '<button class="regen-btn" id="regenMessagingBtn" type="button">Regenerate</button>' : ''}
+          </div>
+        </div>
+        ${inner}
+      </div>`;
+  }
+
+  async function loadMessagingPanel() {
+    if (!MESSAGING_WEBHOOK) {
+      return { initialMarkup: '' };
+    }
+    const cacheKey = messagingCacheKey();
+    const cached = readMessagingCache(cacheKey);
+    if (cached) return { initialMarkup: renderMessagingPanel(cached) };
+
+    const loadingMarkup = renderMessagingPanel(null, { loading: true });
+    setTimeout(async () => {
+      try {
+        const payload = buildMessagingPayload();
+        if (!payload.competitors || payload.competitors.length === 0) {
+          replaceMessagingPanel(renderMessagingPanel({ patterns: [], generatedAt: new Date().toISOString() }));
+          return;
+        }
+        const data = await fetchMessaging(payload);
+        writeMessagingCache(cacheKey, data);
+        replaceMessagingPanel(renderMessagingPanel(data));
+        wireMessagingHandlers();
+      } catch (err) {
+        replaceMessagingPanel(renderMessagingPanel(null, { error: true, errorMessage: err.message }));
+      }
+    }, 50);
+    return { initialMarkup: loadingMarkup };
+  }
+
+  function replaceMessagingPanel(markup) {
+    const existing = document.getElementById('messagingPanel');
+    if (!existing) return;
+    if (!markup) { existing.remove(); return; }
+    const wrap = document.createElement('div');
+    wrap.innerHTML = markup;
+    existing.replaceWith(wrap.firstElementChild);
+  }
+
+  function wireMessagingHandlers() {
+    const btn = document.getElementById('regenMessagingBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const key = messagingCacheKey();
+      try { localStorage.removeItem(key); } catch {}
+      replaceMessagingPanel(renderMessagingPanel(null, { loading: true }));
+      try {
+        const payload = buildMessagingPayload();
+        const data = await fetchMessaging(payload);
+        writeMessagingCache(key, data);
+        replaceMessagingPanel(renderMessagingPanel(data));
+        wireMessagingHandlers();
+      } catch (err) {
+        replaceMessagingPanel(renderMessagingPanel(null, { error: true, errorMessage: err.message }));
+      }
+    });
+  }
+
+  // ============================================================
+  // Helpers
+  // ============================================================
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // Boot
   init();
 </script>
 </body>
