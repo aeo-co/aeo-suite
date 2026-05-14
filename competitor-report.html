@@ -155,6 +155,8 @@
     background: var(--bg-3);
   }
   .btn-export-csv svg { flex-shrink: 0; }
+  /* Info tooltip CSS is in shared/tokens.css (used by all tools) */
+
 
   /* ---------- Headliner cards (3-up) ---------- */
   .headliners {
@@ -1578,17 +1580,17 @@
               Mentioned in <strong>${c.count}</strong> ${c.count === 1 ? 'response' : 'responses'} · ${c.queries.size} of ${allQueries.length} ${allQueries.length === 1 ? 'query' : 'queries'}
               ${posPart}
               ${c.shareOfTheirs > 0
-                ? `<br/>You appear in <strong>${c.shareOfTheirs}%</strong> of their responses`
-                : '<br/>You never appear in their responses'}
+                ? `<br/>You also appear in <strong>${c.shareOfTheirs}%</strong> of responses that mention them`
+                : '<br/>You never appear in responses that mention them'}
             </div>
           </div>`;
       };
 
       html += `
         <div class="headliners">
-          ${renderHL(dominant, 'threat', '★ Dominant Threat')}
-          ${adjacent ? renderHL(adjacent, 'adjacent', '◐ Close Second') : `<div class="headliner"><div class="h-tag">— No close second</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">Only one significant competitor.</div></div>`}
-          ${rising ? renderHL(rising, 'rising', '↗ Wide Coverage') : `<div class="headliner"><div class="h-tag">— No wide-coverage competitor</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">No competitor has unusually broad query reach.</div></div>`}
+          ${renderHL(dominant, 'threat', `★ Dominant Threat ${infoTip('The single most-mentioned competitor in this scan. They are winning the most AI airspace right now.', { below: true })}`)}
+          ${adjacent ? renderHL(adjacent, 'adjacent', `◐ Close Second ${infoTip('The second-most-mentioned competitor. The runner-up — usually still a real threat.', { below: true })}`) : `<div class="headliner"><div class="h-tag">— No close second</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">Only one significant competitor.</div></div>`}
+          ${rising ? renderHL(rising, 'rising', `↗ Wide Coverage ${infoTip('A competitor that shows up across many different queries even when their total mention count is not the highest. They have unusually broad reach, which can be sneaky.', { below: true })}`) : `<div class="headliner"><div class="h-tag">— No wide-coverage competitor</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">No competitor has unusually broad query reach.</div></div>`}
         </div>`;
     }
 
@@ -1648,7 +1650,7 @@
     html += `
       <div class="panel">
         <div class="panel-label panel-label-with-action">
-          <span>Competitor Leaderboard</span>
+          <span>Competitor Leaderboard ${infoTip('Ranked list of every competitor (and you). Shows mention count, queries covered, average rank when cited, and two co-occurrence rates: how often you both appear in the same AI response, from each perspective.')}</span>
           <button class="btn btn-ghost btn-export-csv" id="exportLbCsvBtn" type="button" title="Download competitor data as CSV">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1671,8 +1673,8 @@
             const coCell = c.isYou
               ? `<div class="lb-co" style="opacity: 0.4;">—</div>`
               : `<div class="lb-co">
-                  <div class="co-row"><strong>${c.shareOfTheirs}%</strong><span class="co-label" title="Of responses that mentioned this competitor, what % also mentioned you">You in theirs</span></div>
-                  <div class="co-row"><strong>${c.shareOfYours}%</strong><span class="co-label" title="Of responses that mentioned you, what % also mentioned this competitor">Them in yours</span></div>
+                  <div class="co-row"><strong>${c.shareOfTheirs}%</strong><span class="co-label" title="Of AI responses that mentioned this competitor, what % also mentioned you">You also named</span></div>
+                  <div class="co-row"><strong>${c.shareOfYours}%</strong><span class="co-label" title="Of AI responses that mentioned you, what % also mentioned this competitor">They also named</span></div>
                 </div>`;
             return `
               <div class="lb-row ${c.isYou ? 'you' : ''}">
@@ -1713,7 +1715,7 @@
 
       html += `
         <div class="panel">
-          <div class="panel-label">Head-to-Head · Query Coverage</div>
+          <div class="panel-label">Head-to-Head · Query Coverage ${infoTip('Grid of queries vs top competitors and you. A check mark means that brand appeared in an AI response for that query. Quickly spot which specific queries you are missing.')}</div>
           <div class="h2h-wrap">
             <div class="h2h">
               <div class="h2h-row h2h-head" style="--comp-count: ${matrixCompsForHeader.length};">
@@ -1786,7 +1788,7 @@
 
       html += `
         <div class="panel">
-          <div class="panel-label">Platform Dominance</div>
+          <div class="panel-label">Platform Dominance ${infoTip('Which brands win which AI engine. Each card shows top mentions on GPT, Perplexity, or AI Mode separately, with a strategic callout showing where you lead, where you are close, and where you are losing.')}</div>
           <div class="pd-grid">
             ${perPlatform.map(p => {
               // Find the leader (top mention count on this platform)
@@ -1850,7 +1852,7 @@
     // ---------- Per-Competitor Deep Dive (collapsible) ----------
     html += `
       <div class="panel">
-        <div class="panel-label">Per-Competitor Deep Dive</div>
+        <div class="panel-label">Per-Competitor Deep Dive ${infoTip('Expandable card for each competitor. Click any card to see how AI describes them, which queries they appear in (gold-tagged ones are queries you also appear in), and which platforms they show up on.')}</div>
         <div class="dd-list">
           ${comps.map((c, i) => {
             const platforms = Array.from(c.platforms).map(p => {
@@ -1885,11 +1887,11 @@
                     <div class="co-grid">
                       <div class="co-tile">
                         <div class="co-tile-v">${c.shareOfTheirs}%</div>
-                        <div class="co-tile-k">Of their responses also mention you</div>
+                        <div class="co-tile-k">Of AI responses mentioning them, you're also named</div>
                       </div>
                       <div class="co-tile">
                         <div class="co-tile-v">${c.shareOfYours}%</div>
-                        <div class="co-tile-k">Of your responses also mention them</div>
+                        <div class="co-tile-k">Of AI responses mentioning you, they're also named</div>
                       </div>
                     </div>
                   </div>
@@ -2089,7 +2091,7 @@
     return `
       <div class="ai-summary ${isLoading ? 'loading' : ''} ${isError ? 'error' : ''}" id="aiSummaryPanel">
         <div class="summary-header">
-          <div class="summary-label">AI Summary</div>
+          <div class="summary-label">AI Summary ${infoTip('A strategic narrative written by AI from your scan data. Surfaces the top finding, biggest opportunity, biggest risk, and three specific recommendations. Regenerate to get a fresh take.', { below: true })}</div>
           <div class="summary-meta">
             ${generatedAt ? `Generated ${escapeHtml(generatedAt)}` : ''}
             ${SUMMARY_WEBHOOK ? '<button class="regen-btn" id="regenSummaryBtn" type="button">Regenerate</button>' : ''}
@@ -2263,7 +2265,7 @@
     return `
       <div class="msg-panel ${isLoading ? 'loading' : ''} ${isError ? 'error' : ''}" id="messagingPanel">
         <div class="msg-header">
-          <div class="msg-label">Messaging Differentiators</div>
+          <div class="msg-label">Messaging Differentiators ${infoTip('Strategic angles your competitors are "owning" in AI responses, with suggested counter-positioning for you. Each pattern shows the framing the AI keeps using for that brand, plus how you could differentiate.', { below: true })}</div>
           <div class="msg-meta">
             ${generatedAt ? `Generated ${escapeHtml(generatedAt)}` : ''}
             ${MESSAGING_WEBHOOK ? '<button class="regen-btn" id="regenMessagingBtn" type="button">Regenerate</button>' : ''}
@@ -2339,6 +2341,13 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // Renders a small (?) info icon with a tooltip on hover. Used to explain
+  // what each panel is in plain English.
+  function infoTip(text, opts = {}) {
+    const below = opts.below ? 'tip-below' : '';
+    return `<span class="info-tip ${below}" data-tip="${escapeHtml(text)}" aria-label="${escapeHtml(text)}">?</span>`;
   }
 
   // Boot

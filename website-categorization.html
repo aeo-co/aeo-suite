@@ -1667,7 +1667,7 @@
     if (presentCats.length > 0) {
       html += `
         <div class="panel">
-          <div class="panel-label">Distribution</div>
+          <div class="panel-label">Distribution ${infoTip('Single stacked bar showing how the cited domains break down across the 9 categories. Quick visual of what kinds of sites the AI engines pull from when answering your topic.')}</div>
           <div class="dist-wrap">
             <div class="dist-bar">
               ${presentCats.map(c => {
@@ -1701,7 +1701,7 @@
 
       html += `
         <div class="panel">
-          <div class="panel-label">Brand Co-Citation Footprint</div>
+          <div class="panel-label">Brand Co-Citation Footprint ${infoTip('Three tiles showing how many cited domains have appeared in AI responses alongside your brand, how many have not (potential outreach targets), and your overall co-citation rate. This is co-occurrence in AI responses, not whether the sites themselves talk about your brand.')}</div>
           <div class="brand-pos">
             <div class="bp-tile win">
               <div class="bp-k">↑ Co-cited with brand</div>
@@ -1727,7 +1727,7 @@
     if (perPlatform.length > 1) {
       html += `
         <div class="panel">
-          <div class="panel-label">Categories by Platform</div>
+          <div class="panel-label">Categories by Platform ${infoTip('What kinds of sources each AI engine prefers. GPT might lean toward authoritative Brand sites, Perplexity might pull more Community sources, AI Mode might mix Blog and Social. Useful for platform-specific outreach planning.')}</div>
           <div>
             ${perPlatform.map(p => {
               const total = Object.values(p.categoryCounts).reduce((s, v) => s + v, 0) || 1;
@@ -1767,7 +1767,7 @@
     if (perQuery.length > 0) {
       html += `
         <div class="panel">
-          <div class="panel-label">Categories by Query</div>
+          <div class="panel-label">Categories by Query ${infoTip('Per-query breakdown of which source categories the AI cited. A check mark on the right means your brand was mentioned in that query response, a cross means it was not. Helps you see whether your brand-mention queries pull different sources than your gap queries.')}</div>
           <div>
             ${perQuery.map(q => {
               const total = Object.values(q.categoryCounts).reduce((s, v) => s + v, 0) || 1;
@@ -1866,7 +1866,7 @@
     const showBrandColumn = !!state.targetBrand;
     html += `
       <div class="panel">
-        <div class="panel-label">All Domains · ${totalDomains}</div>
+        <div class="panel-label">All Domains · ${totalDomains} ${infoTip('The complete sortable table of every cited domain. Filter by category or by co-citation status. Click any domain to visit it. Export CSV for use in your own analysis or outreach tracking.')}</div>
         <div class="detail-controls">
           <input type="text" id="detailSearch" placeholder="Search by domain…" />
           <select id="detailFilter">
@@ -2241,7 +2241,7 @@
     return `
       <div class="ai-summary ${isLoading ? 'loading' : ''} ${isError ? 'error' : ''}" id="aiSummaryPanel">
         <div class="summary-header">
-          <div class="summary-label">AI Summary</div>
+          <div class="summary-label">AI Summary ${infoTip('A strategic narrative written by AI from your categorization data. Focuses on the shape of the citation landscape, outreach opportunities, and gaps. Regenerates whenever the scan data changes.', { below: true })}</div>
           <div class="summary-meta">
             ${generatedAt ? `Generated ${escapeHtml(generatedAt)}` : ''}
             ${SUMMARY_WEBHOOK ? '<button class="regen-btn" id="regenSummaryBtn" type="button">Regenerate</button>' : ''}
@@ -2317,6 +2317,13 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // Renders a small (?) info icon with a tooltip on hover.
+  function infoTip(text, opts) {
+    opts = opts || {};
+    const below = opts.below ? 'tip-below' : '';
+    return '<span class="info-tip ' + below + '" data-tip="' + escapeHtml(text) + '" aria-label="' + escapeHtml(text) + '">?</span>';
   }
 
   // ============================================================
