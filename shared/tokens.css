@@ -626,8 +626,7 @@ button {
   align-items: center;
   gap: 10px;
 }
-.ai-summary .regen-btn,
-.msg-panel .regen-btn {
+.ai-summary .regen-btn {
   background: transparent;
   border: 1px solid var(--line-strong);
   color: var(--ink-mute);
@@ -640,13 +639,11 @@ button {
   cursor: pointer;
   transition: all 0.15s;
 }
-.ai-summary .regen-btn:hover,
-.msg-panel .regen-btn:hover {
+.ai-summary .regen-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
-.ai-summary .regen-btn:disabled,
-.msg-panel .regen-btn:disabled {
+.ai-summary .regen-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -876,4 +873,536 @@ button {
 .msg-panel .info-tip {
   color: var(--accent);
   border-color: var(--accent-line);
+}
+
+/* ============================================================
+   PDF Export — shared across all tools
+   Customization panel, preview toolbar, cover, print stylesheet
+   ============================================================ */
+
+/* Floating "Prepare PDF" trigger — bottom-right */
+.pdf-trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(232, 184, 106, 0.2);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.pdf-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(232, 184, 106, 0.3);
+}
+.pdf-trigger svg {
+  width: 14px;
+  height: 14px;
+}
+.pdf-trigger.hidden {
+  display: none;
+}
+
+/* Preview toolbar — shown during PDF preview */
+.pdf-preview-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(232, 184, 106, 0.2);
+}
+.pdf-preview-toolbar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-right: 4px;
+}
+.pdf-preview-btn-primary,
+.pdf-preview-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid;
+}
+.pdf-preview-btn-primary {
+  background: var(--accent);
+  color: #1a1a1a;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.pdf-preview-btn-primary:hover {
+  opacity: 0.9;
+}
+.pdf-preview-btn-secondary {
+  background: transparent;
+  color: var(--ink-mute);
+  border-color: var(--line-strong);
+}
+.pdf-preview-btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Slide-out customization side panel */
+.pdf-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.pdf-panel-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pdf-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  background: var(--bg-1);
+  border-left: 1px solid var(--line-strong);
+  z-index: 91;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+}
+.pdf-panel.open {
+  transform: translateX(0);
+}
+.pdf-panel-header {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pdf-panel-header .ttl {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.pdf-panel-header .sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.pdf-panel-close {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-mute);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    border-color 0.12s,
+    color 0.12s;
+}
+.pdf-panel-close:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pdf-panel-body {
+  padding: 20px 28px 28px;
+}
+.pdf-panel-section {
+  margin-bottom: 24px;
+}
+.pdf-panel-section:last-child {
+  margin-bottom: 0;
+}
+.pdf-panel-section .sec-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.pdf-panel input[type="text"],
+.pdf-panel textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.12s;
+}
+.pdf-panel input[type="text"]:focus,
+.pdf-panel textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.pdf-panel textarea {
+  min-height: 80px;
+}
+.pdf-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pdf-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.pdf-toggle:hover {
+  border-color: var(--line-strong);
+}
+.pdf-toggle input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--bg-2);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+.pdf-toggle input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pdf-toggle input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1;
+}
+.pdf-toggle .label {
+  flex: 1;
+  color: var(--ink);
+  font-size: 13.5px;
+}
+.pdf-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.pdf-btn-primary {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--accent);
+  color: #1a1a1a;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.12s;
+}
+.pdf-btn-primary:hover {
+  opacity: 0.9;
+}
+.pdf-btn-secondary {
+  padding: 12px 16px;
+  background: transparent;
+  color: var(--ink-mute);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pdf-btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pdf-hint {
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--ink-mute);
+  line-height: 1.7;
+  padding: 12px 14px;
+  background: var(--bg-0);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  margin-top: 16px;
+  letter-spacing: 0;
+}
+.pdf-hint strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Cover page */
+.pdf-cover {
+  display: none;
+  padding: 60px 32px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90vh;
+}
+.pdf-cover-inner {
+  max-width: 600px;
+  width: 100%;
+}
+.pdf-cover .cover-prepared {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.pdf-cover .cover-client {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 44px;
+  line-height: 1.1;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 18px;
+}
+.pdf-cover .cover-client em {
+  color: var(--accent);
+}
+.pdf-cover .cover-intro {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-mute);
+  margin: 0 auto;
+  text-align: left;
+  white-space: pre-wrap;
+}
+.pdf-cover .cover-intro:empty {
+  display: none;
+}
+body.pdf-mode .pdf-cover.has-content {
+  display: flex;
+}
+body.pdf-mode .hidden-for-pdf {
+  display: none !important;
+}
+
+/* PDF mode — chrome and editing UI hidden */
+body.pdf-mode .topbar,
+body.pdf-mode .hero,
+body.pdf-mode .source-section,
+body.pdf-mode .pdf-trigger,
+body.pdf-mode .pdf-panel,
+body.pdf-mode .pdf-panel-backdrop,
+body.pdf-mode .regen-btn,
+body.pdf-mode .info-tip {
+  display: none !important;
+}
+
+/* ============================================================
+   Print stylesheet — preserves on-screen dark theme
+   ============================================================ */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 8mm 6mm;
+    background: var(--bg-0);
+  }
+
+  html,
+  body {
+    background: var(--bg-0) !important;
+    color: var(--ink) !important;
+  }
+
+  .topbar,
+  .hero,
+  .source-section,
+  .pdf-trigger,
+  .pdf-panel,
+  .pdf-panel-backdrop,
+  #pdfExitPreview,
+  .pdf-preview-toolbar,
+  .regen-btn,
+  .info-tip,
+  .btn-export-csv,
+  .filter-note {
+    display: none !important;
+  }
+
+  .shell {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Page-break behaviour — keep panels together */
+  .panel,
+  .ai-summary,
+  .msg-panel,
+  .cr-headline,
+  .headliner,
+  .lb-row,
+  .dd-card,
+  .pd-card,
+  .msg-pattern,
+  .pdf-cover,
+  .cat-headline,
+  .cat-group,
+  .qcard,
+  .hm-row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Deep-dive cards expand */
+  .dd-card .dd-body {
+    display: block !important;
+  }
+  .dd-card .chev {
+    display: none !important;
+  }
+  .dd-head {
+    cursor: default !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 14px !important;
+  }
+  .dd-head .stats {
+    grid-column: auto !important;
+  }
+
+  /* Tighter panel padding for paper */
+  .panel,
+  .ai-summary,
+  .msg-panel {
+    padding: 20px !important;
+    margin-bottom: 14px !important;
+  }
+  .cr-headline,
+  .cat-headline {
+    padding: 24px 20px 22px !important;
+    margin-bottom: 14px !important;
+  }
+  .cr-headline .ttl,
+  .cat-headline .ttl {
+    font-size: clamp(22px, 3.5vw, 32px) !important;
+  }
+
+  /* Cover page — fixed mm height so flex centering works
+     without spilling into a blank second page */
+  .pdf-cover.has-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    page-break-after: always;
+    break-after: page;
+    height: 260mm !important;
+    min-height: 0 !important;
+    padding: 20mm 10mm !important;
+    border-bottom: none !important;
+    background: var(--bg-0) !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+  }
+
+  /* Force gradients to render */
+  .lb-bar > div,
+  .ai-summary,
+  .msg-panel,
+  .cr-headline,
+  .cat-headline {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }

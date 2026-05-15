@@ -934,6 +934,76 @@
   }
   .filter-note strong { color: var(--ink-mute); font-weight: 500; }
 
+
+  /* ============================================================
+     PDF Export — most CSS lives in shared/tokens.css.
+     Page-specific layout overrides for print only below.
+     ============================================================ */
+  @media print {
+    /* Headliners — keep 3-up in print */
+    .headliners {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 10px !important;
+    }
+
+    /* Leaderboard — force the 6-col grid back. The mobile media query
+       fires in print because page width is narrow. */
+    .lb-row {
+      display: grid !important;
+      grid-template-columns: 28px minmax(150px, 1.3fr) 1fr 64px 110px 100px !important;
+      gap: 12px !important;
+      align-items: center !important;
+    }
+    .lb-row > *:nth-child(n+3) {
+      grid-column: auto !important;
+      padding-top: 0 !important;
+    }
+    .lb-row .lb-platforms { justify-content: flex-end !important; }
+    .lb-row .lb-co, .lb-row .lb-pos { text-align: center !important; }
+
+    /* Head-to-head matrix — on screen, columns are 72px fixed with
+       horizontal scroll on overflow. In print there's no scrolling, so
+       wide tables get clipped at the page edge. Shrink columns to fit
+       the printable width. */
+    .h2h-wrap {
+      overflow: visible !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .h2h {
+      min-width: 0 !important;
+      width: 100% !important;
+    }
+    .h2h-row {
+      display: grid !important;
+      grid-template-columns: minmax(140px, 1.6fr) repeat(var(--comp-count, 5), minmax(46px, 1fr)) !important;
+      gap: 3px !important;
+    }
+    .h2h-q {
+      font-size: 11px !important;
+      padding: 6px 10px !important;
+      min-height: 36px !important;
+    }
+    .h2h-cell {
+      font-size: 11px !important;
+      min-height: 36px !important;
+      padding: 4px !important;
+    }
+    .h2h-head .h2h-cell {
+      font-size: 9.5px !important;
+      padding: 4px 2px !important;
+    }
+
+    /* Platform Dominance — 3-up if room */
+    .pd-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    }
+  }
+
+
+
+
   @media (max-width: 880px) {
     .headliners { grid-template-columns: 1fr; }
     .lb-row { grid-template-columns: 24px 1fr; gap: 8px; }
@@ -985,11 +1055,97 @@
     </div>
   </section>
 
+  <!-- Cover page — only shown in PDF mode when customized -->
+  <div class="pdf-cover" id="pdfCover">
+    <div class="pdf-cover-inner">
+      <div class="cover-prepared">Competitor Report · Prepared for</div>
+      <div class="cover-client" id="pdfCoverClient"></div>
+      <div class="cover-intro" id="pdfCoverIntro"></div>
+    </div>
+  </div>
+
   <section id="reportRoot"></section>
+
+  <!-- Floating "Prepare PDF Export" trigger -->
+  <button class="pdf-trigger hidden" id="pdfTriggerBtn" type="button" title="Prepare and export this report as a PDF">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="12" y1="18" x2="12" y2="12"/>
+      <polyline points="9 15 12 12 15 15"/>
+    </svg>
+    Prepare PDF
+  </button>
+
+  <!-- Customization side panel + backdrop -->
+  <div class="pdf-panel-backdrop" id="pdfPanelBackdrop"></div>
+  <aside class="pdf-panel" id="pdfPanel" aria-hidden="true">
+    <div class="pdf-panel-header">
+      <div>
+        <div class="ttl">Prepare PDF Export</div>
+        <div class="sub">Customize before downloading</div>
+      </div>
+      <button class="pdf-panel-close" id="pdfPanelClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="pdf-panel-body">
+
+      <div class="pdf-panel-section">
+        <div class="sec-label">Client name</div>
+        <input type="text" id="pdfClientName" placeholder="e.g., Acme Inc." />
+      </div>
+
+      <div class="pdf-panel-section">
+        <div class="sec-label">Custom intro (optional)</div>
+        <textarea id="pdfIntro" placeholder="A brief note that appears on the cover page above the report. Useful for context, scope, or framing."></textarea>
+      </div>
+
+      <div class="pdf-panel-section">
+        <div class="sec-label">Sections to include</div>
+        <div class="pdf-toggle-list" id="pdfToggleList">
+          <label class="pdf-toggle"><input type="checkbox" data-target="headliners" checked /> <span class="label">Headliner cards</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="aiSummarySlot" checked /> <span class="label">AI Summary</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="messagingSlot" checked /> <span class="label">Messaging Differentiators</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="leaderboard" checked /> <span class="label">Competitor Leaderboard</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="h2h" checked /> <span class="label">Head-to-Head matrix</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="platformDominance" checked /> <span class="label">Platform Dominance</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="deepDive" checked /> <span class="label">Per-Competitor Deep Dive</span></label>
+        </div>
+      </div>
+
+      <div class="pdf-actions">
+        <button class="pdf-btn-primary" id="pdfGenerateBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Generate PDF
+        </button>
+        <button class="pdf-btn-secondary" id="pdfPreviewBtn" type="button">Preview</button>
+      </div>
+
+      <div class="pdf-hint">
+        <strong>How to get a clean PDF:</strong><br>
+        1. Click <strong>Generate PDF</strong> — your browser's print dialog opens.<br>
+        2. Set <strong>Destination</strong> to "Save as PDF".<br>
+        3. Open <strong>More settings</strong> and <strong>uncheck "Headers and footers"</strong> — this removes the URL, date, and page-number lines.<br>
+        4. Set <strong>Background graphics</strong> to <strong>on</strong> so the dark theme renders correctly.<br>
+        5. Set <strong>Margins</strong> to "Default" or "Minimum" for best fit.<br>
+        6. Click <strong>Save</strong>.
+      </div>
+
+    </div>
+  </aside>
 
 </div>
 
 <script src="shared/state.js"></script>
+<script src="shared/pdf-export.js"></script>
 <script>
   // ============================================================
   // Config
@@ -1236,10 +1392,14 @@
     competitors.forEach(c => {
       let withYou = 0;
       c.rows.forEach(row => {
+        // IMPORTANT: We check only rawOutput and mentions — NOT the
+        // Competitor Analysis text. That field is per-query strategic
+        // commentary that always names the target brand by construction
+        // (it's an analysis *about* the brand). Including it would falsely
+        // count the brand as appearing in every row.
         const hay = (
           fieldVal(row, fields.rawOutput) + ' ' +
-          fields.mentions.map(k => fieldVal(row, k)).join(' ') + ' ' +
-          fieldVal(row, fields.competitorAnalysis)
+          fields.mentions.map(k => fieldVal(row, k)).join(' ')
         ).toLowerCase();
         if (hay.includes(targetBrandLower)) withYou += 1;
       });
@@ -1376,10 +1536,12 @@
       const youQueriesSet = new Set();
       const youPlatformsSet = new Set();
       rows.forEach(row => {
+        // Same haystack as computeCoOccurrence — only the actual AI
+        // response (rawOutput + mentions), not the Competitor Analysis
+        // commentary that always names the brand.
         const hay = (
           fieldVal(row, state.fields.rawOutput) + ' ' +
-          state.fields.mentions.map(k => fieldVal(row, k)).join(' ') + ' ' +
-          fieldVal(row, state.fields.competitorAnalysis)
+          state.fields.mentions.map(k => fieldVal(row, k)).join(' ')
         ).toLowerCase();
         if (hay.includes(state.targetBrandLower)) {
           youCount += 1;
@@ -1441,8 +1603,7 @@
       rows.forEach(r => {
         const hay = (
           fieldVal(r, state.fields.rawOutput) + ' ' +
-          state.fields.mentions.map(k => fieldVal(r, k)).join(' ') + ' ' +
-          fieldVal(r, state.fields.competitorAnalysis)
+          state.fields.mentions.map(k => fieldVal(r, k)).join(' ')
         ).toLowerCase();
         if (!hay.includes(state.targetBrandLower)) return;
         const p = parseScore(fieldVal(r, state.fields.brandPositions));
@@ -1587,7 +1748,7 @@
       };
 
       html += `
-        <div class="headliners">
+        <div class="headliners" id="headliners">
           ${renderHL(dominant, 'threat', `★ Dominant Threat ${infoTip('The single most-mentioned competitor in this scan. They are winning the most AI airspace right now.', { below: true })}`)}
           ${adjacent ? renderHL(adjacent, 'adjacent', `◐ Close Second ${infoTip('The second-most-mentioned competitor. The runner-up — usually still a real threat.', { below: true })}`) : `<div class="headliner"><div class="h-tag">— No close second</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">Only one significant competitor.</div></div>`}
           ${rising ? renderHL(rising, 'rising', `↗ Wide Coverage ${infoTip('A competitor that shows up across many different queries even when their total mention count is not the highest. They have unusually broad reach, which can be sneaky.', { below: true })}`) : `<div class="headliner"><div class="h-tag">— No wide-coverage competitor</div><div class="h-name" style="opacity:0.5;">—</div><div class="h-stat">No competitor has unusually broad query reach.</div></div>`}
@@ -1648,7 +1809,7 @@
     ].sort((a, b) => b.count - a.count);
 
     html += `
-      <div class="panel">
+      <div class="panel" id="leaderboard">
         <div class="panel-label panel-label-with-action">
           <span>Competitor Leaderboard ${infoTip('Ranked list of every competitor (and you). Shows mention count, queries covered, average rank when cited, and two co-occurrence rates: how often you both appear in the same AI response, from each perspective.')}</span>
           <button class="btn btn-ghost btn-export-csv" id="exportLbCsvBtn" type="button" title="Download competitor data as CSV">
@@ -1714,7 +1875,7 @@
       ];
 
       html += `
-        <div class="panel">
+        <div class="panel" id="h2h">
           <div class="panel-label">Head-to-Head · Query Coverage ${infoTip('Grid of queries vs top competitors and you. A check mark means that brand appeared in an AI response for that query. Quickly spot which specific queries you are missing.')}</div>
           <div class="h2h-wrap">
             <div class="h2h">
@@ -1773,8 +1934,7 @@
           if (normalizePlatform(fieldVal(row, state.fields.platform)) !== p) return;
           const hay = (
             fieldVal(row, state.fields.rawOutput) + ' ' +
-            state.fields.mentions.map(k => fieldVal(row, k)).join(' ') + ' ' +
-            fieldVal(row, state.fields.competitorAnalysis)
+            state.fields.mentions.map(k => fieldVal(row, k)).join(' ')
           ).toLowerCase();
           if (hay.includes(state.targetBrandLower)) youOnPlatform += 1;
         });
@@ -1787,7 +1947,7 @@
       });
 
       html += `
-        <div class="panel">
+        <div class="panel" id="platformDominance">
           <div class="panel-label">Platform Dominance ${infoTip('Which brands win which AI engine. Each card shows top mentions on GPT, Perplexity, or AI Mode separately, with a strategic callout showing where you lead, where you are close, and where you are losing.')}</div>
           <div class="pd-grid">
             ${perPlatform.map(p => {
@@ -1851,7 +2011,7 @@
 
     // ---------- Per-Competitor Deep Dive (collapsible) ----------
     html += `
-      <div class="panel">
+      <div class="panel" id="deepDive">
         <div class="panel-label">Per-Competitor Deep Dive ${infoTip('Expandable card for each competitor. Click any card to see how AI describes them, which queries they appear in (gold-tagged ones are queries you also appear in), and which platforms they show up on.')}</div>
         <div class="dd-list">
           ${comps.map((c, i) => {
@@ -2005,7 +2165,19 @@
         URL.revokeObjectURL(blobUrl);
       });
     }
+
+    // Show the floating "Prepare PDF" trigger once the report is rendered,
+    // and pre-fill the client name with the target brand for convenience.
+    PdfExport.showTrigger();
+    PdfExport.prefillClientName(state.targetBrand);
   }
+
+  // ============================================================
+  // PDF Export — wired through shared/pdf-export.js
+  // ============================================================
+  // Boot the PDF panel once. The trigger button stays hidden until
+  // a report is rendered (attachHandlers calls PdfExport.showTrigger).
+  PdfExport.init();
 
   // ============================================================
   // AI Summary
