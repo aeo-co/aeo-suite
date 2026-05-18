@@ -8,17 +8,698 @@
 <link rel="stylesheet" href="shared/tokens.css" />
 
 <style>
-  .source-section { margin-bottom: 40px; }
+  .source-section { margin-bottom: 32px; }
 
-  .report-empty {
-    padding: 60px 32px;
+  /* Loading state */
+  .loading-card {
+    padding: 48px 32px;
+    text-align: center;
+    background: var(--bg-1);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+  }
+  .loading-card .spinner {
+    display: inline-block;
+    width: 28px; height: 28px;
+    border: 3px solid var(--line-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: tr-spin 0.8s linear infinite;
+    margin-bottom: 18px;
+  }
+  @keyframes tr-spin { to { transform: rotate(360deg); } }
+  .loading-card .ttl {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .loading-card .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Headline */
+  .tr-headline {
+    text-align: center;
+    padding: 36px 24px 32px;
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .tr-headline::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .tr-headline .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .tr-headline .ttl {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(26px, 3.6vw, 36px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+    color: var(--ink);
+  }
+  .tr-headline .ttl em { color: var(--accent); font-style: italic; }
+  .tr-headline .meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .tr-headline .meta .dot {
+    width: 3px; height: 3px;
+    background: var(--ink-faint);
+    border-radius: 50%;
+  }
+  .tr-effort-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .tr-eff-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 120px;
+  }
+  .tr-eff-v {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+  }
+  .tr-eff-slash {
+    color: var(--ink-faint);
+    font-size: 18px;
+    margin: 0 2px;
+  }
+  .tr-eff-k {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .tr-eff-sep {
+    width: 1px;
+    height: 28px;
+    background: var(--line);
+  }
+
+  /* Panel primitive */
+  .panel {
     background: var(--bg-1);
     border: 1px solid var(--line);
     border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .panel-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-label::before { content: '//'; color: var(--accent); }
+
+  .panel-label.panel-label-with-action {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .panel-label.panel-label-with-action > span:first-of-type { flex: 1; }
+
+  /* ---------- Action Plan ---------- */
+  .ap-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ap-filter {
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink-mute);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 11px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .ap-filter:hover { border-color: var(--line-strong); }
+  .ap-filter.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .ap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ap-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 16px;
+    padding: 18px 20px;
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    align-items: start;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ap-row:hover { border-color: var(--line-strong); }
+  .ap-row.priority-1 { border-left: 3px solid var(--bad); }
+  .ap-row.priority-2 { border-left: 3px solid var(--accent); }
+  .ap-row.priority-3 { border-left: 3px solid var(--ok); }
+  .ap-num {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+    padding-top: 2px;
+  }
+  .ap-body { min-width: 0; }
+  .ap-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.35;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
+  }
+  .ap-why {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-mute);
+    margin-bottom: 10px;
+  }
+  .ap-why strong { color: var(--ink); font-weight: 500; }
+  .ap-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .ap-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid;
+  }
+  .ap-tag.type-content   { color: var(--ok); border-color: rgba(127,191,140,0.36); background: rgba(127,191,140,0.06); }
+  .ap-tag.type-outreach  { color: var(--accent); border-color: var(--accent-line); background: var(--accent-glow); }
+  .ap-tag.type-distribution { color: #8aa3c8; border-color: rgba(138,163,200,0.32); background: rgba(138,163,200,0.06); }
+  .ap-tag.type-differentiation { color: #d7a87a; border-color: rgba(215,168,122,0.32); background: rgba(215,168,122,0.06); }
+  .ap-tag.effort-quick   { color: var(--ok); border-color: rgba(127,191,140,0.32); }
+  .ap-tag.effort-medium  { color: var(--accent); border-color: var(--accent-line); }
+  .ap-tag.effort-major   { color: var(--bad); border-color: rgba(217,122,111,0.32); }
+  .ap-tag.impact-high    { background: rgba(232,184,106,0.12); color: var(--accent); border-color: var(--accent); }
+  .ap-tag.impact-medium  { color: var(--ink-mute); border-color: var(--line-strong); }
+  .ap-tag.impact-low     { color: var(--ink-faint); border-color: var(--line); }
+
+  .ap-impact {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: right;
+    padding-top: 4px;
+    min-width: 90px;
+  }
+  .ap-impact .impact-v {
+    display: block;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--accent);
+    margin-bottom: 2px;
+    letter-spacing: -0.02em;
+    font-style: normal;
+    font-weight: 400;
+  }
+  .ap-impact .ap-impact-label {
+    display: block;
+    margin-bottom: 10px;
+  }
+  /* Time-to-impact bar */
+  .ap-time-bar {
+    height: 4px;
+    background: var(--bg-2);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .ap-time-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s;
+  }
+  .ap-time-bar-fill.effort-quick  { background: var(--ok); }
+  .ap-time-bar-fill.effort-medium { background: var(--accent); }
+  .ap-time-bar-fill.effort-major  { background: var(--bad); }
+  .ap-time-label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    text-transform: none;
+  }
+
+  /* Expand button — sits inside ap-tags */
+  .ap-expand {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink-mute);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 9px 3px 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .ap-expand:hover { border-color: var(--accent); color: var(--accent); }
+  .ap-expand svg { transition: transform 0.15s; }
+  .ap-row.expanded .ap-expand svg { transform: rotate(-180deg); }
+  /* When expanded, swap "Show brief" → "Hide brief".
+     We zero-out the original label font-size and inject the new text
+     via ::before so we don't need to manipulate the DOM. */
+  .ap-row.expanded .ap-expand .ap-expand-label {
+    font-size: 0;
+  }
+  .ap-row.expanded .ap-expand .ap-expand-label::before {
+    content: "Hide brief";
+    font-size: 10px;
+  }
+
+  /* Brief panel — collapsed by default, expanded when .expanded on parent */
+  .ap-brief {
+    grid-column: 1 / -1;
+    display: none;
+    margin-top: 14px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+  }
+  .ap-row.expanded .ap-brief { display: block; }
+
+  .brief-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-bottom: 14px;
+  }
+  .brief-row:last-child { margin-bottom: 0; }
+  .brief-col-wide { grid-column: 1 / -1; }
+  .brief-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .brief-val {
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .brief-val a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted var(--line-strong);
+  }
+  .brief-val a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .brief-val-italic { font-style: italic; color: var(--ink-mute); }
+  .brief-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-left: 6px;
+  }
+  .brief-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .brief-list li {
+    font-size: 12.5px;
+    color: var(--ink);
+    padding: 4px 0 4px 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .brief-list li::before {
+    content: '·';
+    position: absolute;
+    left: 4px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .brief-list li a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--line-strong);
+  }
+  .brief-list li a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .brief-list li.empty-li {
+    color: var(--ink-faint);
+    font-style: italic;
+    font-size: 12px;
+  }
+  .brief-list li.empty-li::before { content: ''; }
+  .brief-note {
+    font-size: 12px;
+    color: var(--ink-mute);
+    line-height: 1.55;
+    margin-top: 10px;
+    font-style: italic;
+    padding: 8px 12px;
+    background: var(--bg-2);
+    border-radius: var(--radius-sm);
+  }
+
+  /* ---------- Opportunity Matrix ---------- */
+  .matrix-wrap {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .matrix-y-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    align-self: center;
     text-align: center;
+  }
+  .matrix-grid {
+    position: relative;
+    aspect-ratio: 2/1;
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .matrix-grid::before,
+  .matrix-grid::after {
+    content: '';
+    position: absolute;
+    background: var(--line);
+  }
+  .matrix-grid::before { /* horizontal mid line */
+    left: 0; right: 0;
+    top: 50%;
+    height: 1px;
+  }
+  .matrix-grid::after { /* vertical mid line */
+    top: 0; bottom: 0;
+    left: 50%;
+    width: 1px;
+  }
+  .matrix-quadrant-label {
+    position: absolute;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 10px;
+  }
+  .matrix-quadrant-label.tl { top: 6px; left: 6px; color: var(--accent); }
+  .matrix-quadrant-label.tr { top: 6px; right: 6px; }
+  .matrix-quadrant-label.bl { bottom: 6px; left: 6px; }
+  .matrix-quadrant-label.br { bottom: 6px; right: 6px; }
+  .matrix-dot {
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg-0);
+    transform: translate(-50%, 50%);
+    cursor: help;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .matrix-dot:hover {
+    transform: translate(-50%, 50%) scale(1.4);
+    box-shadow: 0 0 12px var(--accent-glow);
+    z-index: 5;
+  }
+  .matrix-dot.priority-1 { background: var(--bad); }
+  .matrix-dot.priority-2 { background: var(--accent); }
+  .matrix-dot.priority-3 { background: var(--ok); }
+  .matrix-x-label {
+    margin-left: 72px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* ---------- Query Triage ---------- */
+  .triage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .triage-tier {
+    padding: 18px 20px;
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+  .triage-tier.strong   { border-left: 3px solid var(--ok); }
+  .triage-tier.contested { border-left: 3px solid var(--accent); }
+  .triage-tier.weak     { border-left: 3px solid var(--bad); }
+  .triage-tier.untapped { border-left: 3px solid var(--ink-faint); }
+  .triage-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .triage-head .tier-name {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink);
+  }
+  .triage-head .tier-count {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .triage-tier .tier-action {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .triage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .triage-query {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ink);
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .triage-query:first-child { border-top: none; padding-top: 0; }
+  .triage-query .q-text {
+    flex: 1;
+    font-style: italic;
     color: var(--ink-mute);
   }
-  .report-empty .ico {
+  .triage-query .q-score {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .triage-query.empty {
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  /* ---------- Content Angles (placeholder for Pass 2) ---------- */
+  .content-angles-pending {
+    padding: 30px 20px;
+    text-align: center;
+    background: var(--bg-0);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-sm);
+    color: var(--ink-mute);
+    font-size: 14px;
+    font-style: italic;
+  }
+  .content-angles-pending strong { color: var(--accent); font-style: normal; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ---------- Outreach Targets ---------- */
+  .ot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ot-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.5fr) 130px 70px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.12s;
+  }
+  .ot-row:hover { border-color: var(--line-strong); }
+  .ot-domain {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+  .ot-domain a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted var(--line-strong);
+  }
+  .ot-domain a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .ot-category {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-mute);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .ot-citations {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 500;
+    text-align: center;
+  }
+  .ot-citations .ot-citations-label {
+    display: block;
+    font-size: 9px;
+    color: var(--ink-faint);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .ot-why {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--ink-mute);
+  }
+  .ot-why strong { color: var(--ink); font-weight: 500; }
+  .ot-cocited-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-line);
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* Empty / error states */
+  .empty-state {
+    padding: 60px 32px;
+    text-align: center;
+    color: var(--ink-mute);
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .empty-state .ico {
     font-family: var(--serif);
     font-style: italic;
     font-size: 64px;
@@ -26,18 +707,53 @@
     margin-bottom: 12px;
     line-height: 1;
   }
-  .report-empty h3 {
+  .empty-state h3 {
     font-family: var(--serif);
     font-style: italic;
     font-weight: 400;
-    font-size: 24px;
+    font-size: 22px;
     color: var(--ink);
     margin-bottom: 8px;
   }
-  .report-empty p { max-width: 420px; margin: 0 auto; font-size: 14px; }
 
   #reportRoot { display: none; }
   #reportRoot.show { display: block; }
+
+  /* Page-specific print overrides */
+  @media print {
+    .triage-grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 10px !important;
+    }
+    .ot-row {
+      display: grid !important;
+      grid-template-columns: minmax(140px, 1.4fr) 110px 60px 1fr !important;
+    }
+    .ap-row {
+      display: grid !important;
+      grid-template-columns: 32px 1fr auto !important;
+      page-break-inside: avoid;
+    }
+    .matrix-grid { aspect-ratio: 2.2/1 !important; }
+
+    /* Force all briefs visible in print — the PDF is the deliverable,
+       users shouldn't have to manually expand every action first. Hide
+       the expand button itself since the brief is always shown. */
+    .ap-brief { display: block !important; }
+    .ap-expand { display: none !important; }
+    .brief-row {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+    }
+  }
+
+  @media (max-width: 880px) {
+    .ot-row { grid-template-columns: 1fr; gap: 8px; }
+    .ap-row { grid-template-columns: 28px 1fr; }
+    .ap-impact { grid-column: 2; text-align: left; }
+    .panel { padding: 20px; }
+  }
 </style>
 </head>
 
@@ -48,24 +764,23 @@
     <a href="index.html" class="brand-mark" aria-label="AEO Suite home"><span>aeo</span></a>
     <div class="brand-text">
       <div class="product">AEO Suite</div>
-      <div class="suite">Topical Relevance · v1</div>
+      <div class="suite">Topical Relevance Plan · v1</div>
     </div>
     <div class="topbar-spacer"></div>
     <div class="status-pill">LIVE</div>
   </header>
 
   <section class="hero">
-    <div class="eyebrow">Step 02 — Topical Relevance Plan</div>
-    <h1>Map the topics you need to <em>own</em>.</h1>
-    <p>A content plan that surfaces the themes and topics where your brand should be visible. Continue from a previous scan, or upload a CSV to start fresh.</p>
+    <div class="eyebrow">Step 04 — Topical Relevance Plan</div>
+    <h1>What should we <em>do</em> about it?</h1>
+    <p>A prioritized action plan based on your scan: where to focus content, who to pitch, and which queries to defend.</p>
   </section>
 
+  <!-- Source: continue panel + drop zone -->
   <section class="source-section" id="sourceSection">
     <div id="continueSlot"></div>
-
     <div id="uploadSlot">
       <div class="or-divider" id="orDivider" style="display:none;">Or upload a CSV</div>
-
       <label class="drop-zone" id="dropZone">
         <input type="file" id="csvInput" accept=".csv,text/csv" />
         <div class="dz-icon">
@@ -81,37 +796,149 @@
     </div>
   </section>
 
-  <section class="card" id="reportRoot" style="padding: 48px 32px;">
-    <div class="section-head">
-      <h2>Topical relevance <em>plan</em></h2>
-      <div class="status-pill" id="reportMeta">0 ROWS</div>
+  <!-- Cover page — only shown in PDF mode when customized -->
+  <div class="pdf-cover" id="pdfCover">
+    <div class="pdf-cover-inner">
+      <div class="cover-prepared">Topical Relevance Plan · Prepared for</div>
+      <div class="cover-client" id="pdfCoverClient"></div>
+      <div class="cover-intro" id="pdfCoverIntro"></div>
     </div>
-    <div class="report-empty">
-      <div class="ico">∅</div>
-      <h3>Topical plan goes here</h3>
-      <p>The topic clustering, content gaps, and prioritized recommendations will be built into this section.</p>
+  </div>
+
+  <section id="reportRoot"></section>
+
+  <!-- Floating "Prepare PDF Export" trigger -->
+  <button class="pdf-trigger hidden" id="pdfTriggerBtn" type="button" title="Prepare and export this report as a PDF">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="12" y1="18" x2="12" y2="12"/>
+      <polyline points="9 15 12 12 15 15"/>
+    </svg>
+    Prepare PDF
+  </button>
+
+  <!-- Customization side panel + backdrop -->
+  <div class="pdf-panel-backdrop" id="pdfPanelBackdrop"></div>
+  <aside class="pdf-panel" id="pdfPanel" aria-hidden="true">
+    <div class="pdf-panel-header">
+      <div>
+        <div class="ttl">Prepare PDF Export</div>
+        <div class="sub">Customize before downloading</div>
+      </div>
+      <button class="pdf-panel-close" id="pdfPanelClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
-  </section>
+    <div class="pdf-panel-body">
+
+      <div class="pdf-panel-section">
+        <div class="sec-label">Client name</div>
+        <input type="text" id="pdfClientName" placeholder="e.g., Acme Inc." />
+      </div>
+
+      <div class="pdf-panel-section">
+        <div class="sec-label">Custom intro (optional)</div>
+        <textarea id="pdfIntro" placeholder="A brief note that appears on the cover page."></textarea>
+      </div>
+
+      <div class="pdf-panel-section">
+        <div class="sec-label">Sections to include</div>
+        <div class="pdf-toggle-list" id="pdfToggleList">
+          <label class="pdf-toggle"><input type="checkbox" data-target="aiSummarySlot" checked /> <span class="label">AI Summary</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="actionPlanPanel" checked /> <span class="label">Priority Action Plan</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="matrixPanel" checked /> <span class="label">Opportunity Matrix</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="triagePanel" checked /> <span class="label">Query Triage</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="contentAnglesPanel" checked /> <span class="label">Content Angles</span></label>
+          <label class="pdf-toggle"><input type="checkbox" data-target="outreachPanel" checked /> <span class="label">Outreach Targets</span></label>
+        </div>
+      </div>
+
+      <div class="pdf-actions">
+        <button class="pdf-btn-primary" id="pdfGenerateBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Generate PDF
+        </button>
+        <button class="pdf-btn-secondary" id="pdfPreviewBtn" type="button">Preview</button>
+      </div>
+
+      <div class="pdf-hint">
+        <strong>How to get a clean PDF:</strong><br>
+        1. Click <strong>Generate PDF</strong> — your browser's print dialog opens.<br>
+        2. Set <strong>Destination</strong> to "Save as PDF".<br>
+        3. Open <strong>More settings</strong> and <strong>uncheck "Headers and footers"</strong>.<br>
+        4. Set <strong>Background graphics</strong> to <strong>on</strong>.<br>
+        5. Set <strong>Margins</strong> to "Default" or "Minimum".<br>
+        6. Click <strong>Save</strong>.
+      </div>
+
+    </div>
+  </aside>
 
 </div>
 
 <script src="shared/state.js"></script>
+<script src="shared/pdf-export.js"></script>
 <script>
+  // ============================================================
+  // Config
+  // ============================================================
+  // n8n endpoint that generates the LLM-driven Action Plan + Content Angles.
+  // Empty for Pass 1 — page renders the data-derived sections only.
+  const ACTION_PLAN_WEBHOOK = 'https://n8n-smartmarketer.duckdns.org/webhook/action-plan';
+
+  const PLATFORM_OPTIONS = [
+    { key: 'gpt',        label: 'GPT' },
+    { key: 'perplexity', label: 'Perplexity' },
+    { key: 'ai_mode',    label: 'AI Mode' },
+  ];
+
+  // Query-triage tier thresholds (visibility score per query)
+  const TIER_THRESHOLDS = {
+    strong:    60,   // 60-100
+    contested: 20,   // 20-60
+    weak:       1,   // 1-20 (but at least mentioned somewhere)
+    // untapped: zero visibility on every platform
+  };
+
+  // ============================================================
+  // State
+  // ============================================================
+  const state = {
+    rows: null,
+    fields: null,
+    targetBrand: '',
+    targetBrandLower: '',
+    queryTriage: null,        // { strong: [], contested: [], weak: [], untapped: [] }
+    outreachTargets: null,    // [{ domain, category, citations, hasBrand, queries }]
+    actionPlan: null,         // populated by LLM in Pass 2; for Pass 1, derived heuristically
+    actionFilter: 'all',      // 'all' | 'content' | 'outreach' | 'distribution' | 'differentiation'
+  };
+
   const els = {
     continueSlot: document.getElementById('continueSlot'),
     orDivider:    document.getElementById('orDivider'),
     dropZone:     document.getElementById('dropZone'),
     csvInput:     document.getElementById('csvInput'),
     reportRoot:   document.getElementById('reportRoot'),
-    reportMeta:   document.getElementById('reportMeta'),
   };
 
+  // ============================================================
+  // Init
+  // ============================================================
   function init() {
     const ctx = ToolState.getScanContext();
     if (ctx && ctx.rows.length > 0) {
       renderContinuePanel(ctx);
       els.orDivider.style.display = 'flex';
-      loadRows(ctx.rows, { brand: ctx.brand, queries: ctx.queries });
+      processRows(ctx.rows);
     }
   }
 
@@ -119,7 +946,6 @@
     const queryCount = ctx.queries.length;
     const queryLabel = queryCount === 1 ? 'query' : 'queries';
     const when = ctx.runAt ? new Date(ctx.runAt).toLocaleString() : 'recent';
-
     els.continueSlot.innerHTML = `
       <div class="continue-panel">
         <div class="cp-icon">
@@ -129,67 +955,65 @@
         </div>
         <div class="cp-text">
           <div class="cp-title">Loaded from your latest scan</div>
-          <div class="cp-meta">${ctx.brand || 'Brand'} · ${queryCount} ${queryLabel} · ${ctx.rows.length} rows · ${when}</div>
+          <div class="cp-meta">${escapeHtml(ctx.brand || 'Brand')} · ${queryCount} ${queryLabel} · ${ctx.rows.length} rows · ${when}</div>
         </div>
         <button class="btn btn-ghost" id="clearStateBtn" type="button">Use a different file</button>
-      </div>
-    `;
+      </div>`;
     document.getElementById('clearStateBtn').addEventListener('click', () => {
       ToolState.clear();
       els.continueSlot.innerHTML = '';
       els.orDivider.style.display = 'none';
       els.reportRoot.classList.remove('show');
+      els.reportRoot.innerHTML = '';
     });
   }
 
-  els.dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    els.dropZone.classList.add('is-dragover');
-  });
-  els.dropZone.addEventListener('dragleave', () => {
-    els.dropZone.classList.remove('is-dragover');
-  });
-  els.dropZone.addEventListener('drop', (e) => {
+  // ============================================================
+  // CSV upload
+  // ============================================================
+  els.dropZone.addEventListener('dragover', e => { e.preventDefault(); els.dropZone.classList.add('is-dragover'); });
+  els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('is-dragover'));
+  els.dropZone.addEventListener('drop', e => {
     e.preventDefault();
     els.dropZone.classList.remove('is-dragover');
     const file = e.dataTransfer.files[0];
     if (file) handleCsvFile(file);
   });
-  els.csvInput.addEventListener('change', (e) => {
+  els.csvInput.addEventListener('change', e => {
     const file = e.target.files[0];
     if (file) handleCsvFile(file);
   });
 
   function handleCsvFile(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const rows = parseCsv(e.target.result);
-      loadRows(rows, { brand: '', queries: [] });
+    reader.onload = e => {
+      const rows = parseCsvToObjects(e.target.result);
+      processRows(rows);
     };
     reader.readAsText(file);
   }
 
-  function parseCsv(text) {
+  function parseCsvToObjects(text) {
     const lines = [];
-    let cur = '', inQuotes = false, row = [];
+    let cur = '', inQ = false, row = [];
     for (let i = 0; i < text.length; i++) {
-      const ch = text[i];
-      if (inQuotes) {
-        if (ch === '"' && text[i + 1] === '"') { cur += '"'; i++; }
-        else if (ch === '"') { inQuotes = false; }
-        else { cur += ch; }
+      const c = text[i];
+      if (inQ) {
+        if (c === '"' && text[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else cur += c;
       } else {
-        if (ch === '"') inQuotes = true;
-        else if (ch === ',') { row.push(cur); cur = ''; }
-        else if (ch === '\n' || ch === '\r') {
+        if (c === '"') inQ = true;
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n' || c === '\r') {
           if (cur !== '' || row.length) { row.push(cur); lines.push(row); row = []; cur = ''; }
-          if (ch === '\r' && text[i + 1] === '\n') i++;
-        } else { cur += ch; }
+          if (c === '\r' && text[i+1] === '\n') i++;
+        } else cur += c;
       }
     }
     if (cur !== '' || row.length) { row.push(cur); lines.push(row); }
     if (lines.length === 0) return [];
-    const headers = lines[0].map(h => h.trim());
+    const headers = lines[0];
     return lines.slice(1).map(arr => {
       const obj = {};
       headers.forEach((h, i) => { obj[h] = arr[i] ?? ''; });
@@ -197,12 +1021,849 @@
     });
   }
 
-  function loadRows(rows, meta) {
-    els.reportRoot.classList.add('show');
-    els.reportMeta.textContent = `${rows.length} ROWS`;
-    console.log('[Topical Relevance] loaded rows:', rows.length, 'meta:', meta);
+  // ============================================================
+  // Field resolution
+  // ============================================================
+  function resolveFields(sampleRow) {
+    const keys = Object.keys(sampleRow);
+    const norm = k => String(k).trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+    const find = (...patterns) => {
+      for (const k of keys) {
+        const n = norm(k);
+        for (const p of patterns) if (p.test(n)) return k;
+      }
+      return null;
+    };
+    return {
+      brand:        find(/^brand$/, /brand name/),
+      platform:     find(/^platform$/, /channel/),
+      query:        find(/^query$/, /search query/, /^question$/),
+      rawOutput:    find(/raw output/, /model output/, /^response$/),
+      score:        find(/^visibility score/, /^visbility score/, /^score$/),
+      urls:         find(/^urls?$/, /^link/, /cited urls/),
+      sources:      find(/^sources?$/, /references?/),
+      mentions: keys
+        .filter(k => /mention/i.test(k))
+        .sort((a, b) => {
+          const an = parseInt((a.match(/\d+/) || [0])[0]);
+          const bn = parseInt((b.match(/\d+/) || [0])[0]);
+          return an - bn;
+        }),
+    };
   }
 
+  function fieldVal(row, key, fallback = '') {
+    if (!key) return fallback;
+    const v = row[key];
+    if (v === undefined || v === null) return fallback;
+    return typeof v === 'string' ? v.trim() : v;
+  }
+  function normalizePlatform(v) { return String(v || '').trim().toLowerCase().replace(/[\s-]+/g, '_'); }
+  function parseScore(v) {
+    if (v === null || v === undefined || v === '') return null;
+    const s = String(v).replace(/%/g, '').trim();
+    if (s === '' || isNaN(s)) return null;
+    return Math.round(parseFloat(s));
+  }
+
+  // ============================================================
+  // URL extraction (matches dashboard's approach)
+  // ============================================================
+  function extractDomain(url) {
+    try {
+      const u = url.startsWith('http') ? url : 'https://' + url;
+      const host = new URL(u).hostname.toLowerCase();
+      return host.replace(/^www\./, '');
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function extractUrls(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+      return raw.map(u => typeof u === 'string' ? { url: u } : u).filter(u => u.url);
+    }
+    if (typeof raw === 'object' && raw.url) return [raw];
+    if (typeof raw !== 'string') return [];
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    // Try JSON
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map(u => typeof u === 'string' ? { url: u } : u).filter(u => u.url);
+        }
+        if (parsed.url) return [parsed];
+      } catch (e) {}
+    }
+    // Fallback: find URLs in text
+    const matches = trimmed.match(/https?:\/\/[^\s,;)\]"']+/g) || [];
+    return matches.map(url => ({ url }));
+  }
+
+  // ============================================================
+  // Brand mention detection — same haystack rule as the rest of the suite.
+  // Only AI response text + mentions, NOT Competitor Analysis (that's
+  // metadata-about-brand that would over-count).
+  // ============================================================
+  function rowMentionsBrand(row, fields, targetBrandLower) {
+    if (!targetBrandLower) return false;
+    const hay = (
+      fieldVal(row, fields.rawOutput) + ' ' +
+      fields.mentions.map(k => fieldVal(row, k)).join(' ')
+    ).toLowerCase();
+    return hay.includes(targetBrandLower);
+  }
+
+  // ============================================================
+  // Infrastructure domain filter — same as categorization
+  // ============================================================
+  function isInfrastructureDomain(domain) {
+    const d = String(domain || '').toLowerCase();
+    if (!d) return false;
+    if (/\.cloudfront\.net$/.test(d)) return true;
+    if (/\.amazonaws\.com$/.test(d)) return true;
+    if (/\.googleusercontent\.com$/.test(d)) return true;
+    if (/\.gstatic\.com$/.test(d)) return true;
+    if (/\.googleapis\.com$/.test(d)) return true;
+    if (/\.ctfassets\.net$/.test(d)) return true;
+    if (/\.netlify\.app$/.test(d)) return true;
+    if (/\.vercel\.app$/.test(d)) return true;
+    if (/\.cloudinary\.com$/.test(d)) return true;
+    if (/\.shopifycdn\.com$/.test(d)) return true;
+    if (/\.googletagmanager\.com$/.test(d)) return true;
+    if (/\.akamaized\.net$/.test(d)) return true;
+    if (/\.fastly\.net$/.test(d)) return true;
+    if (/\.azureedge\.net$/.test(d)) return true;
+    if (/\.jsdelivr\.net$/.test(d)) return true;
+    if (/\.unpkg\.com$/.test(d)) return true;
+    if (/^(assets|static|cdn|media|files|images|img)\./.test(d) && /\.(net|so|app|io|co)$/.test(d)) return true;
+    return false;
+  }
+
+  // ============================================================
+  // Triage queries into 4 tiers by best score across platforms
+  // ============================================================
+  function buildQueryTriage(rows, fields, targetBrandLower) {
+    // Group rows by query, compute the brand's best score across platforms
+    const byQuery = {};
+    rows.forEach(row => {
+      const q = String(fieldVal(row, fields.query) || '').trim();
+      if (!q) return;
+      if (!byQuery[q]) byQuery[q] = { query: q, scores: [], mentioned: false, platforms: {} };
+      const score = parseScore(fieldVal(row, fields.score));
+      const platform = normalizePlatform(fieldVal(row, fields.platform));
+      const m = rowMentionsBrand(row, fields, targetBrandLower);
+      if (m) byQuery[q].mentioned = true;
+      // Per-platform best score
+      if (!byQuery[q].platforms[platform] || (score !== null && score > byQuery[q].platforms[platform])) {
+        byQuery[q].platforms[platform] = score !== null ? score : byQuery[q].platforms[platform];
+      }
+      if (m && score !== null) byQuery[q].scores.push(score);
+    });
+
+    const triage = { strong: [], contested: [], weak: [], untapped: [] };
+    Object.values(byQuery).forEach(q => {
+      const best = q.scores.length > 0 ? Math.max(...q.scores) : 0;
+      q.bestScore = best;
+      // Bucket
+      if (best >= TIER_THRESHOLDS.strong)         triage.strong.push(q);
+      else if (best >= TIER_THRESHOLDS.contested) triage.contested.push(q);
+      else if (best >= TIER_THRESHOLDS.weak || q.mentioned) triage.weak.push(q);
+      else                                         triage.untapped.push(q);
+    });
+    // Sort each tier
+    triage.strong.sort((a, b) => b.bestScore - a.bestScore);
+    triage.contested.sort((a, b) => b.bestScore - a.bestScore);
+    triage.weak.sort((a, b) => b.bestScore - a.bestScore);
+    triage.untapped.sort((a, b) => a.query.localeCompare(b.query));
+    return triage;
+  }
+
+  // ============================================================
+  // Compute outreach targets — domains cited frequently but never
+  // co-cited with the brand (and excluding infrastructure domains).
+  // ============================================================
+  function buildOutreachTargets(rows, fields, targetBrandLower) {
+    // For each row, get domains cited, brand-co-cited status, query
+    const domainData = {};
+    rows.forEach(row => {
+      const q = String(fieldVal(row, fields.query) || '').trim();
+      const brandHere = rowMentionsBrand(row, fields, targetBrandLower);
+      const urls = new Set();
+      extractUrls(row[fields.urls]).forEach(u => urls.add(u.url));
+      extractUrls(row[fields.sources]).forEach(u => urls.add(u.url));
+      const domainsInRow = new Set();
+      urls.forEach(u => {
+        const d = extractDomain(u);
+        if (!d) return;
+        if (isInfrastructureDomain(d)) return;
+        domainsInRow.add(d);
+      });
+      domainsInRow.forEach(d => {
+        if (!domainData[d]) {
+          domainData[d] = { domain: d, citations: 0, hasBrand: false, queries: new Set() };
+        }
+        domainData[d].citations += 1;
+        if (q) domainData[d].queries.add(q);
+        if (brandHere) domainData[d].hasBrand = true;
+      });
+    });
+
+    // Outreach targets: NOT yet co-cited with brand, sorted by citation count
+    const all = Object.values(domainData);
+    return all
+      .filter(d => !d.hasBrand)
+      .sort((a, b) => b.citations - a.citations)
+      .slice(0, 15);
+  }
+
+  // ============================================================
+  // Build heuristic action plan (Pass 1 — no LLM yet).
+  // These are template-based prioritized actions derived from the data.
+  // In Pass 2 we replace this with LLM-generated actions.
+  // ============================================================
+
+  // Infer a likely content format from the query phrasing.
+  // Doesn't try to be clever; just maps common patterns.
+  function inferFormat(query) {
+    const q = String(query || '').toLowerCase();
+    if (/\bvs\b|\bversus\b|\bvs\.?\b|compared? to/.test(q))      return { format: 'Comparison page',   words: 1000 };
+    if (/^how (do|to|can|should)|^what is|^why does/.test(q))    return { format: 'How-to guide',     words: 1500 };
+    if (/^best |top \d+|recommend/.test(q))                       return { format: 'Listicle / ranking', words: 1200 };
+    if (/^where (can|to)|near me|in my area/.test(q))             return { format: 'Locator page',     words: 800 };
+    if (/cost|price|cheap|affordable/.test(q))                    return { format: 'Pricing guide',    words: 900 };
+    if (/^should i|^when (do|should)/.test(q))                    return { format: 'Decision guide',   words: 1100 };
+    return { format: 'Long-form article', words: 1300 };
+  }
+
+  // Pull a few related queries from the same data set — these become
+  // "questions the content should also answer" in the brief.
+  function findRelatedQueries(targetQuery, allQueries, max) {
+    const target = String(targetQuery || '').toLowerCase();
+    if (!target) return [];
+    // Tokenize target and look for queries sharing at least 2 content words
+    const stopWords = new Set(['the','a','an','for','of','to','in','on','my','i','is','are','best','what','how','where','can','find','do','that','this']);
+    const targetTokens = new Set(target.split(/\W+/).filter(t => t.length > 3 && !stopWords.has(t)));
+    if (targetTokens.size === 0) return [];
+
+    return allQueries
+      .filter(q => q.toLowerCase() !== target)
+      .map(q => {
+        const tokens = new Set(q.toLowerCase().split(/\W+/).filter(t => t.length > 3 && !stopWords.has(t)));
+        let overlap = 0;
+        targetTokens.forEach(t => { if (tokens.has(t)) overlap++; });
+        return { query: q, overlap };
+      })
+      .filter(x => x.overlap >= 2)
+      .sort((a, b) => b.overlap - a.overlap)
+      .slice(0, max)
+      .map(x => x.query);
+  }
+
+  // Pull top URLs that currently get cited for this query. Useful for
+  // showing "here's what already ranks — reference these or beat them."
+  function topUrlsForQuery(targetQuery, rows, fields, max) {
+    const target = String(targetQuery || '').toLowerCase();
+    const counts = {};
+    rows.forEach(row => {
+      const q = String(fieldVal(row, fields.query) || '').toLowerCase();
+      if (q !== target) return;
+      const urls = new Set();
+      extractUrls(row[fields.urls]).forEach(u => urls.add(u.url));
+      extractUrls(row[fields.sources]).forEach(u => urls.add(u.url));
+      urls.forEach(u => {
+        const d = extractDomain(u);
+        if (!d || isInfrastructureDomain(d)) return;
+        counts[d] = (counts[d] || 0) + 1;
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, max)
+      .map(([domain, n]) => ({ domain, count: n }));
+  }
+
+  // Time-to-impact mapping — converts effort tag to a friendly week estimate.
+  function timeEstimateForEffort(effort) {
+    if (effort === 'quick')  return { label: '~2 wks',  weeks: 2,  pct: 18 };
+    if (effort === 'medium') return { label: '~6 wks',  weeks: 6,  pct: 55 };
+    if (effort === 'major')  return { label: '~10 wks', weeks: 10, pct: 95 };
+    return { label: '~6 wks', weeks: 6, pct: 55 };
+  }
+
+  // Build a content brief for a query-driven action.
+  function buildContentBrief(action, query, rows, fields, allQueries) {
+    const fmt = inferFormat(query);
+    const related = findRelatedQueries(query, allQueries, 4);
+    const topUrls = topUrlsForQuery(query, rows, fields, 3);
+    return {
+      kind: 'content',
+      targetQuery: query,
+      format: fmt.format,
+      suggestedLength: fmt.words,
+      keyQuestions: related,
+      currentTopSites: topUrls,
+    };
+  }
+
+  // Build an outreach brief for a domain-driven action.
+  function buildOutreachBrief(domain, queriesArr) {
+    // Suggest a touchpoint based on the kind of site (rough heuristic).
+    const d = domain.toLowerCase();
+    let touchpoint = 'Guest article or expert quote';
+    if (/\.gov$|\.edu$/.test(d))                          touchpoint = 'Citation / reference inclusion';
+    else if (/wikipedia\.org$|britannica/.test(d))        touchpoint = 'Citation in reference article';
+    else if (/reddit|quora|stackexchange|forum/.test(d))  touchpoint = 'Authoritative answer or AMA';
+    else if (/youtube|vimeo/.test(d))                     touchpoint = 'Video collaboration or feature';
+    else if (/linkedin|medium/.test(d))                   touchpoint = 'Thought leadership post';
+    else if (/news|times|post|journal|magazine|review/.test(d)) touchpoint = 'PR pitch or expert source';
+    return {
+      kind: 'outreach',
+      domain,
+      touchpoint,
+      queries: queriesArr,
+    };
+  }
+
+  function buildHeuristicActionPlan() {
+    const actions = [];
+    const triage = state.queryTriage;
+    const outreach = state.outreachTargets;
+    const allQueries = [
+      ...triage.strong, ...triage.contested, ...triage.weak, ...triage.untapped
+    ].map(q => q.query);
+
+    // Quick wins: contested queries where you're close (best score 40-60)
+    const closeContested = triage.contested.filter(q => q.bestScore >= 40).slice(0, 2);
+    closeContested.forEach((q) => {
+      const a = {
+        priority: 1,
+        type: 'content',
+        title: `Strengthen content for "${truncate(q.query, 70)}"`,
+        why: `Your brand currently scores <strong>${q.bestScore}%</strong> on this query — close to winning. A focused content piece or page optimization could push you over the line.`,
+        effort: 'medium',
+        impact: 'high',
+        impactValue: q.bestScore,
+      };
+      a.brief = buildContentBrief(a, q.query, state.rows, state.fields, allQueries);
+      actions.push(a);
+    });
+
+    // Critical gaps: weak queries where you're barely showing
+    const topWeak = triage.weak.slice(0, 3);
+    topWeak.forEach(q => {
+      const a = {
+        priority: 2,
+        type: 'content',
+        title: `Build foundational content for "${truncate(q.query, 70)}"`,
+        why: `Your brand has very low visibility on this query (best score <strong>${q.bestScore}%</strong>). New content that directly addresses this question is needed.`,
+        effort: 'major',
+        impact: 'medium',
+        impactValue: 100 - q.bestScore,
+      };
+      a.brief = buildContentBrief(a, q.query, state.rows, state.fields, allQueries);
+      actions.push(a);
+    });
+
+    // Untapped queries: nobody is winning these consistently
+    const topUntapped = triage.untapped.slice(0, 2);
+    topUntapped.forEach(q => {
+      const a = {
+        priority: 1,
+        type: 'content',
+        title: `Stake a claim on untapped query: "${truncate(q.query, 70)}"`,
+        why: `No brand is dominating this query. First-mover content here could establish authority before competitors catch on.`,
+        effort: 'medium',
+        impact: 'high',
+        impactValue: 90,
+      };
+      a.brief = buildContentBrief(a, q.query, state.rows, state.fields, allQueries);
+      actions.push(a);
+    });
+
+    // Top outreach: the most-cited site you've never appeared alongside
+    const topOutreach = outreach.slice(0, 3);
+    topOutreach.forEach(d => {
+      const a = {
+        priority: 2,
+        type: 'outreach',
+        title: `Pitch ${d.domain}`,
+        why: `Cited by AI engines <strong>${d.citations} times</strong> in your topic space, across ${d.queries.size} ${d.queries.size === 1 ? 'query' : 'queries'} — but never alongside your brand. A guest article, expert quote, or partnership could surface your brand in their next mention.`,
+        effort: 'medium',
+        impact: 'high',
+        impactValue: Math.min(95, 50 + d.citations * 3),
+      };
+      a.brief = buildOutreachBrief(d.domain, Array.from(d.queries));
+      actions.push(a);
+    });
+
+    // Defend strong queries (keep doing what works)
+    if (triage.strong.length >= 2) {
+      const a = {
+        priority: 3,
+        type: 'distribution',
+        title: `Protect your strong queries (${triage.strong.length} ${triage.strong.length === 1 ? 'query' : 'queries'})`,
+        why: `You score well on <strong>${triage.strong.length} ${triage.strong.length === 1 ? 'query' : 'queries'}</strong>. Audit the content that surfaces here and keep it fresh — competitors are watching too.`,
+        effort: 'quick',
+        impact: 'medium',
+        impactValue: 65,
+      };
+      a.brief = {
+        kind: 'defense',
+        queries: triage.strong.slice(0, 5).map(q => q.query),
+      };
+      actions.push(a);
+    }
+
+    // Sort by priority then impact
+    actions.sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return b.impactValue - a.impactValue;
+    });
+
+    return actions.slice(0, 12);
+  }
+
+  // ============================================================
+  // PROCESS pipeline
+  // ============================================================
+  function processRows(rows) {
+    if (!rows || rows.length === 0) {
+      showEmpty('No data to display', 'The dataset is empty.');
+      return;
+    }
+    state.rows = rows;
+    state.fields = resolveFields(rows[0]);
+    state.targetBrand = String(fieldVal(rows[0], state.fields.brand) || '').trim();
+    state.targetBrandLower = state.targetBrand.toLowerCase();
+
+    if (!state.targetBrand) {
+      showEmpty('Target brand missing', "This scan doesn't have a brand field. The Topical Relevance Plan needs a brand to anchor recommendations.");
+      return;
+    }
+
+    // Build derivatives
+    state.queryTriage = buildQueryTriage(rows, state.fields, state.targetBrandLower);
+    state.outreachTargets = buildOutreachTargets(rows, state.fields, state.targetBrandLower);
+    state.actionPlan = buildHeuristicActionPlan();
+
+    render();
+  }
+
+  function showEmpty(title, body) {
+    els.reportRoot.classList.add('show');
+    els.reportRoot.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">∅</div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(body)}</p>
+      </div>`;
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function render() {
+    const triage = state.queryTriage;
+    const totalQueries = triage.strong.length + triage.contested.length + triage.weak.length + triage.untapped.length;
+    const opportunityCount = triage.weak.length + triage.contested.length + triage.untapped.length;
+    const quickWins = state.actionPlan.filter(a => a.effort === 'quick' || (a.priority === 1 && a.effort !== 'major')).length;
+
+    let html = '';
+
+    // ---------- Effort summary ----------
+    const effortCounts = {
+      quick:  state.actionPlan.filter(a => a.effort === 'quick').length,
+      medium: state.actionPlan.filter(a => a.effort === 'medium').length,
+      major:  state.actionPlan.filter(a => a.effort === 'major').length,
+    };
+    const totalWeeks = effortCounts.quick * 1.5 + effortCounts.medium * 4.5 + effortCounts.major * 10;
+    // If a team works in parallel (roughly 3 streams), real elapsed time is
+    // about a third. We round to a friendly range.
+    const parallelWeeks = Math.round(totalWeeks / 3);
+    const quickWinCount = effortCounts.quick + state.actionPlan.filter(a => a.priority === 1 && a.effort !== 'major').length;
+
+    // ---------- Headline ----------
+    html += `
+      <div class="tr-headline">
+        <div class="label">Topical Relevance Plan</div>
+        <div class="ttl"><em>${state.actionPlan.length}</em> recommended ${state.actionPlan.length === 1 ? 'action' : 'actions'} · <em>${opportunityCount}</em> ${opportunityCount === 1 ? 'opportunity' : 'opportunities'} · <em>${triage.strong.length}</em> to defend</div>
+        <div class="meta">
+          <span>${escapeHtml(state.targetBrand)}</span>
+          <span class="dot"></span>
+          <span>${totalQueries} ${totalQueries === 1 ? 'query' : 'queries'} analyzed</span>
+          <span class="dot"></span>
+          <span>${state.outreachTargets.length} outreach ${state.outreachTargets.length === 1 ? 'target' : 'targets'}</span>
+        </div>
+        <div class="tr-effort-summary">
+          <div class="tr-eff-item">
+            <span class="tr-eff-v">${quickWinCount}</span>
+            <span class="tr-eff-k">quick ${quickWinCount === 1 ? 'win' : 'wins'} this month</span>
+          </div>
+          <div class="tr-eff-sep"></div>
+          <div class="tr-eff-item">
+            <span class="tr-eff-v">~${parallelWeeks}</span>
+            <span class="tr-eff-k">${parallelWeeks === 1 ? 'week' : 'weeks'} of focused work</span>
+          </div>
+          <div class="tr-eff-sep"></div>
+          <div class="tr-eff-item">
+            <span class="tr-eff-v">${effortCounts.quick}<span class="tr-eff-slash">/</span>${effortCounts.medium}<span class="tr-eff-slash">/</span>${effortCounts.major}</span>
+            <span class="tr-eff-k">quick / medium / major</span>
+          </div>
+        </div>
+      </div>`;
+
+    // ---------- AI Summary slot (Pass 2 will populate) ----------
+    html += `
+      <div id="aiSummarySlot">
+        <div class="ai-summary">
+          <div class="summary-header">
+            <div class="summary-label">AI Summary ${infoTip('A strategic narrative written by AI from your scan data. Surfaces the top finding, biggest opportunity, biggest risk, and recommendations.', { below: true })}</div>
+            <div class="summary-meta"></div>
+          </div>
+          <div class="summary-error">
+            <em>AI summary not yet wired</em> — the LLM endpoint for this report will be added in the next pass. The data-derived sections below work without it.
+          </div>
+        </div>
+      </div>`;
+
+    // ---------- Priority Action Plan ----------
+    html += `
+      <div class="panel" id="actionPlanPanel">
+        <div class="panel-label panel-label-with-action">
+          <span>Priority Action Plan ${infoTip('Recommended actions sorted by priority and expected impact. Each action shows what to do, why it matters (with supporting data), the type of work, effort required, and expected impact.')}</span>
+          <button class="btn btn-ghost btn-export-csv" id="exportApCsvBtn" type="button" title="Download action plan as CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+        <div class="ap-filters" id="apFilters">
+          <button class="ap-filter active" data-filter="all" type="button">All · ${state.actionPlan.length}</button>
+          <button class="ap-filter" data-filter="content" type="button">Content · ${state.actionPlan.filter(a => a.type === 'content').length}</button>
+          <button class="ap-filter" data-filter="outreach" type="button">Outreach · ${state.actionPlan.filter(a => a.type === 'outreach').length}</button>
+          <button class="ap-filter" data-filter="distribution" type="button">Distribution · ${state.actionPlan.filter(a => a.type === 'distribution').length}</button>
+          <button class="ap-filter" data-filter="differentiation" type="button">Differentiation · ${state.actionPlan.filter(a => a.type === 'differentiation').length}</button>
+        </div>
+        <div class="ap-list" id="apList">
+          ${renderActionList(state.actionPlan)}
+        </div>
+      </div>`;
+
+    // ---------- Opportunity Matrix ----------
+    html += `
+      <div class="panel" id="matrixPanel">
+        <div class="panel-label">Opportunity Matrix ${infoTip('Each action plotted on Impact (vertical) vs Effort (horizontal). The top-left quadrant — high impact, low effort — is where to focus first. Hover any dot to see the action.')}</div>
+        ${renderMatrix(state.actionPlan)}
+      </div>`;
+
+    // ---------- Query Triage ----------
+    html += `
+      <div class="panel" id="triagePanel">
+        <div class="panel-label">Query Triage ${infoTip('Every query in your scan sorted into four tiers based on your visibility score. Strong queries to defend, contested queries to push, weak queries to invest in, untapped queries to claim.')}</div>
+        <div class="triage-grid">
+          ${renderTriageTier('strong',    'Strong',    triage.strong,    'Defend')}
+          ${renderTriageTier('contested', 'Contested', triage.contested, 'Push')}
+          ${renderTriageTier('weak',      'Weak',      triage.weak,      'Invest')}
+          ${renderTriageTier('untapped',  'Untapped',  triage.untapped,  'Explore')}
+        </div>
+      </div>`;
+
+    // ---------- Content Angles (placeholder for Pass 2) ----------
+    html += `
+      <div class="panel" id="contentAnglesPanel">
+        <div class="panel-label">Content Angles ${infoTip('Suggested content angles derived from competitor positioning analysis. Each angle proposes a differentiating message to counter how a competitor is being framed in AI responses.')}</div>
+        <div class="content-angles-pending">
+          <strong>Pass 2</strong><br>
+          Content angles will be generated by analyzing the competitor positioning data via a new LLM endpoint. The shape will match the Messaging Differentiators from the Competitor Report, framed as content briefs.
+        </div>
+      </div>`;
+
+    // ---------- Outreach Targets ----------
+    if (state.outreachTargets.length > 0) {
+      html += `
+        <div class="panel" id="outreachPanel">
+          <div class="panel-label">Outreach Targets ${infoTip('Sites cited frequently by AI engines in your topic space but never alongside your brand. These are warm prospects — they have authority in your space, you just have not surfaced alongside them yet.')}</div>
+          <div class="ot-list">
+            ${state.outreachTargets.map(d => `
+              <div class="ot-row">
+                <div class="ot-domain">
+                  <a href="https://${escapeHtml(d.domain)}" target="_blank" rel="noopener">${escapeHtml(d.domain)}</a>
+                </div>
+                <div class="ot-category">${d.queries.size} ${d.queries.size === 1 ? 'query' : 'queries'}</div>
+                <div class="ot-citations">${d.citations}<span class="ot-citations-label">Citations</span></div>
+                <div class="ot-why">
+                  Authoritative in your space (cited ${d.citations} ${d.citations === 1 ? 'time' : 'times'} across ${d.queries.size} ${d.queries.size === 1 ? 'query' : 'queries'}) but <strong>has never been co-cited with your brand</strong>. Worth pitching a guest piece, expert quote, or partnership.
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    els.reportRoot.classList.add('show');
+    els.reportRoot.innerHTML = html;
+    attachHandlers();
+    PdfExport.showTrigger();
+    PdfExport.prefillClientName(state.targetBrand);
+  }
+
+  // ============================================================
+  // Render helpers
+  // ============================================================
+  function renderActionList(actions) {
+    if (actions.length === 0) {
+      return `<div class="triage-query empty">No actions match this filter.</div>`;
+    }
+    return actions.map((a, i) => {
+      const t = timeEstimateForEffort(a.effort);
+      return `
+      <div class="ap-row priority-${a.priority}" data-type="${a.type}" data-idx="${i}">
+        <div class="ap-num">${String(i + 1).padStart(2, '0')}</div>
+        <div class="ap-body">
+          <div class="ap-title">${escapeHtml(a.title)}</div>
+          <div class="ap-why">${a.why}</div>
+          <div class="ap-tags">
+            <span class="ap-tag type-${a.type}">${capitalize(a.type)}</span>
+            <span class="ap-tag effort-${a.effort}">Effort: ${capitalize(a.effort)}</span>
+            <span class="ap-tag impact-${a.impact}">Impact: ${capitalize(a.impact)}</span>
+            <button class="ap-expand" type="button" aria-label="Show content brief">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+              <span class="ap-expand-label">Show brief</span>
+            </button>
+          </div>
+        </div>
+        <div class="ap-impact">
+          <span class="impact-v">${a.impactValue}</span>
+          <span class="ap-impact-label">Score</span>
+          <div class="ap-time-bar" title="Estimated time to impact: ${t.label}">
+            <div class="ap-time-bar-fill effort-${a.effort}" style="width: ${t.pct}%"></div>
+          </div>
+          <div class="ap-time-label">${t.label}</div>
+        </div>
+        ${a.brief ? renderBrief(a.brief, i) : ''}
+      </div>
+    `;
+    }).join('');
+  }
+
+  // Render the content brief inside an expandable section.
+  function renderBrief(brief, idx) {
+    if (brief.kind === 'content') {
+      const questions = brief.keyQuestions.length === 0
+        ? '<li class="empty-li">No closely-related queries in this scan.</li>'
+        : brief.keyQuestions.map(q => `<li>"${escapeHtml(q)}"</li>`).join('');
+      const sites = brief.currentTopSites.length === 0
+        ? '<li class="empty-li">No domains were cited for this query in the scan.</li>'
+        : brief.currentTopSites.map(s => `<li><a href="https://${escapeHtml(s.domain)}" target="_blank" rel="noopener">${escapeHtml(s.domain)}</a> <span class="brief-count">cited ${s.count}×</span></li>`).join('');
+      return `
+        <div class="ap-brief" id="apBrief-${idx}">
+          <div class="brief-row">
+            <div class="brief-col">
+              <div class="brief-label">Target query</div>
+              <div class="brief-val brief-val-italic">"${escapeHtml(brief.targetQuery)}"</div>
+            </div>
+            <div class="brief-col">
+              <div class="brief-label">Suggested format</div>
+              <div class="brief-val">${escapeHtml(brief.format)} <span class="brief-count">~${brief.suggestedLength} words</span></div>
+            </div>
+          </div>
+          <div class="brief-row">
+            <div class="brief-col">
+              <div class="brief-label">Also answer in the piece</div>
+              <ul class="brief-list">${questions}</ul>
+            </div>
+            <div class="brief-col">
+              <div class="brief-label">Currently cited for this query</div>
+              <ul class="brief-list">${sites}</ul>
+            </div>
+          </div>
+        </div>`;
+    }
+    if (brief.kind === 'outreach') {
+      const queriesList = brief.queries.slice(0, 4).map(q => `<li>"${escapeHtml(q)}"</li>`).join('');
+      return `
+        <div class="ap-brief" id="apBrief-${idx}">
+          <div class="brief-row">
+            <div class="brief-col">
+              <div class="brief-label">Site</div>
+              <div class="brief-val"><a href="https://${escapeHtml(brief.domain)}" target="_blank" rel="noopener">${escapeHtml(brief.domain)}</a></div>
+            </div>
+            <div class="brief-col">
+              <div class="brief-label">Suggested touchpoint</div>
+              <div class="brief-val">${escapeHtml(brief.touchpoint)}</div>
+            </div>
+          </div>
+          <div class="brief-row">
+            <div class="brief-col brief-col-wide">
+              <div class="brief-label">They get cited for these queries — your angle should address one or more</div>
+              <ul class="brief-list">${queriesList}</ul>
+            </div>
+          </div>
+        </div>`;
+    }
+    if (brief.kind === 'defense') {
+      const queriesList = brief.queries.map(q => `<li>"${escapeHtml(q)}"</li>`).join('');
+      return `
+        <div class="ap-brief" id="apBrief-${idx}">
+          <div class="brief-row">
+            <div class="brief-col brief-col-wide">
+              <div class="brief-label">Queries to audit and keep fresh</div>
+              <ul class="brief-list">${queriesList}</ul>
+              <div class="brief-note">Review the pages that currently surface here. Check for outdated facts, broken links, or stale framing. Watch for competitors creating better-resourced alternatives.</div>
+            </div>
+          </div>
+        </div>`;
+    }
+    return '';
+  }
+
+  function renderMatrix(actions) {
+    // Map effort → x (0=quick, 50=medium, 100=major)
+    // Map impact → y (low=20, medium=55, high=85)
+    const xMap = { quick: 18, medium: 50, major: 82 };
+    const yMap = { low: 22, medium: 55, high: 82 };
+
+    const dots = actions.map((a, i) => {
+      const x = xMap[a.effort] || 50;
+      const y = yMap[a.impact] || 50;
+      return `<div class="matrix-dot priority-${a.priority}"
+                   style="left: ${x}%; bottom: ${y}%;"
+                   title="${escapeHtml(a.title)} (${capitalize(a.type)}, ${capitalize(a.effort)} effort, ${capitalize(a.impact)} impact)"></div>`;
+    }).join('');
+
+    return `
+      <div class="matrix-wrap">
+        <div class="matrix-y-label">Impact →</div>
+        <div class="matrix-grid">
+          <div class="matrix-quadrant-label tl">Quick Wins</div>
+          <div class="matrix-quadrant-label tr">Big Bets</div>
+          <div class="matrix-quadrant-label bl">Fill-ins</div>
+          <div class="matrix-quadrant-label br">Reconsider</div>
+          ${dots}
+        </div>
+      </div>
+      <div class="matrix-x-label">Effort →</div>
+    `;
+  }
+
+  function renderTriageTier(key, name, items, action) {
+    const itemsList = items.length === 0
+      ? `<div class="triage-query empty">— no queries in this tier</div>`
+      : items.slice(0, 8).map(q => `
+          <div class="triage-query">
+            <div class="q-text">"${escapeHtml(truncate(q.query, 90))}"</div>
+            <div class="q-score">${q.bestScore}%</div>
+          </div>
+        `).join('') + (items.length > 8 ? `<div class="triage-query empty">+ ${items.length - 8} more</div>` : '');
+
+    return `
+      <div class="triage-tier ${key}">
+        <div class="triage-head">
+          <div class="tier-name">${escapeHtml(name)}</div>
+          <div class="tier-count">${items.length}</div>
+        </div>
+        <div class="tier-action">→ ${escapeHtml(action)}</div>
+        <div class="triage-list">
+          ${itemsList}
+        </div>
+      </div>`;
+  }
+
+  // ============================================================
+  // Event handlers
+  // ============================================================
+  function attachHandlers() {
+    // Filter buttons
+    document.querySelectorAll('#apFilters .ap-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        state.actionFilter = filter;
+        // Update active state
+        document.querySelectorAll('#apFilters .ap-filter').forEach(b => b.classList.toggle('active', b === btn));
+        // Filter and re-render list
+        const filtered = filter === 'all'
+          ? state.actionPlan
+          : state.actionPlan.filter(a => a.type === filter);
+        document.getElementById('apList').innerHTML = renderActionList(filtered);
+      });
+    });
+
+    // Expand handler — delegated so it survives filter re-renders
+    const apList = document.getElementById('apList');
+    if (apList) {
+      apList.addEventListener('click', (e) => {
+        const expandBtn = e.target.closest('.ap-expand');
+        if (!expandBtn) return;
+        const row = expandBtn.closest('.ap-row');
+        if (row) row.classList.toggle('expanded');
+      });
+    }
+
+    // CSV export of action plan
+    const exportBtn = document.getElementById('exportApCsvBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const csvEscape = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+        const headers = ['Priority', 'Action', 'Type', 'Effort', 'Impact', 'Score', 'Rationale'];
+        const lines = [headers.map(csvEscape).join(',')];
+        state.actionPlan.forEach(a => {
+          // Strip HTML from rationale
+          const why = String(a.why).replace(/<[^>]*>/g, '');
+          lines.push([
+            a.priority, a.title, capitalize(a.type), capitalize(a.effort), capitalize(a.impact), a.impactValue, why,
+          ].map(csvEscape).join(','));
+        });
+        const csv = lines.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aeo-action-plan-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+  }
+
+  // ============================================================
+  // PDF Export — wired through shared/pdf-export.js
+  // ============================================================
+  PdfExport.init();
+
+  // ============================================================
+  // Helpers
+  // ============================================================
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  function truncate(s, n) {
+    s = String(s == null ? '' : s);
+    return s.length > n ? s.substring(0, n).trim() + '…' : s;
+  }
+  function capitalize(s) {
+    s = String(s == null ? '' : s);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function infoTip(text, opts) {
+    opts = opts || {};
+    const below = opts.below ? 'tip-below' : '';
+    return '<span class="info-tip ' + below + '" data-tip="' + escapeHtml(text) + '" aria-label="' + escapeHtml(text) + '">?</span>';
+  }
+
+  // Boot
   init();
 </script>
 </body>
