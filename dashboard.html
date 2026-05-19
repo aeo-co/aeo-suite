@@ -1786,6 +1786,10 @@
         return Math.round(parseFloat(s));
       }
 
+      // Map a numeric score (or null/undefined) to a colored badge class +
+      // label. We deliberately distinguish "measured zero" (we have data, the
+      // brand just wasn't picked up) from "no data" (the score field was
+      // missing). They look semantically different on a per-query card.
       function scoreClass(score) {
         if (
           score === null ||
@@ -1799,7 +1803,10 @@
         if (n >= 70) return { cls: "badge-excellent", label: "Excellent" };
         if (n >= 40) return { cls: "badge-moderate", label: "Moderate" };
         if (n > 0) return { cls: "badge-low", label: "Low" };
-        return { cls: "badge-none", label: "No Data" };
+        // Measured zero — brand was absent. Show as "Zero" rather than the
+        // ambiguous "No Data" label which conflates measurement-was-zero with
+        // measurement-was-missing.
+        return { cls: "badge-low", label: "Zero" };
       }
 
       function normalizePlatform(v) {
@@ -1807,6 +1814,47 @@
           .trim()
           .toLowerCase()
           .replace(/[\s-]+/g, "_");
+      }
+
+      // ============================================================
+      // Brand detection helpers — word-boundary matching so a brand name
+      // like "Cure" doesn't match inside "secure" / "manicure".
+      // Used by every count that asks "did this row mention the brand".
+      // ============================================================
+      function brandMatcher(brandLower) {
+        if (!brandLower) return null;
+        const escaped = brandLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp("\\b" + escaped + "\\b", "i");
+      }
+
+      // True if the target brand appears in the AI response or mentions for
+      // this row. Excludes Competitor Analysis text (that field mentions
+      // the brand by construction, which would inflate every count).
+      function rowMentionsBrand(row, fields, brandRe) {
+        if (!brandRe) return false;
+        const hay =
+          fieldVal(row, fields.rawOutput) +
+          " " +
+          extractMentions(row, fields.mentions).join(" ");
+        return brandRe.test(hay);
+      }
+
+      // Normalize a brand name to a canonical key so variant casings and
+      // whitespace collapse into one entry. "Stella" / "Stella " / "stella"
+      // / "Stella Health Inc" all → "stella".
+      //
+      // Strips common industry suffixes (inc, llc, health, wellness, clinic
+      // etc.) — same behavior as competitor-report.html so the two reports
+      // agree on what counts as the same brand. Trade-off documented there:
+      // could collapse genuinely-distinct brands like "Modern Health" vs
+      // "Modern Wellness", but in practice it's the right call for our
+      // primary verticals.
+      function brandKey(name) {
+        return String(name || "")
+          .toLowerCase()
+          .replace(/\b(inc|llc|ltd|corp|co|the|health|wellness|clinic)\b/g, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
       }
 
       // ============================================================
@@ -2026,7 +2074,11 @@
           ? String(fieldVal(rows[0], state.fields?.date) || "")
           : "";
         const filter = state.platformFilter || "all";
-        return `aeo:summary:dashboard:${String(brand).toLowerCase()}:${filter}:${rows.length}:${firstDate}`;
+        // v3: topCitedDomains semantics changed from row-count to distinct-
+        // query count, and topMentionedBrands now uses normalized brand keys
+        // so variant casings/whitespace collapse. Numbers feeding the LLM
+        // have shifted, so invalidate older cached summaries.
+        return `aeo:summary:dashboard:v3:${String(brand).toLowerCase()}:${filter}:${rows.length}:${firstDate}`;
       }
 
       function readSummaryCache(key) {
@@ -2057,6 +2109,7 @@
         const perQuery = [];
         const groups = groupByQuery(rows, fields);
         const targetBrand = String(brand || "").toLowerCase();
+        const brandRe = brandMatcher(targetBrand);
         groups.forEach((g) => {
           const platforms = Object.keys(g.byPlatform);
           let mentioned = false;
@@ -2066,14 +2119,7 @@
             const s = parseScore(fieldVal(row, fields.score));
             if (s !== null && (bestScore === null || s > bestScore))
               bestScore = s;
-            if (targetBrand) {
-              const hay = (
-                fieldVal(row, fields.rawOutput) +
-                " " +
-                extractMentions(row, fields.mentions).join(" ")
-              ).toLowerCase();
-              if (hay.includes(targetBrand)) mentioned = true;
-            }
+            if (rowMentionsBrand(row, fields, brandRe)) mentioned = true;
           });
           perQuery.push({
             query: g.query,
@@ -2089,11 +2135,14 @@
           queries: c,
         }));
 
-        // Top competitors / brands mentioned (from insights)
+        // Top competitors / brands mentioned (from insights).
+        // brandFreq values are now { displayName, count } objects, keyed by
+        // normalized brand-key so variants like "Stella" and "Stella Health
+        // Inc" merge into one entry rather than competing for slots.
         const topBrands = Object.entries(insights.brandFreq || {})
-          .sort((a, b) => b[1] - a[1])
+          .sort((a, b) => b[1].count - a[1].count)
           .slice(0, 10)
-          .map(([name, count]) => ({ name, count }));
+          .map(([, v]) => ({ name: v.displayName, count: v.count }));
 
         // Describe the scope this summary covers — important so the LLM knows
         // whether it's analyzing the full scan or a single-platform slice.
@@ -2334,8 +2383,8 @@
           brandMentionedRows: 0,
           avgScore: 0,
           brandMentionRate: 0,
-          bestQuery: { score: -1, query: "" },
-          worstQuery: { score: 999, query: "" },
+          bestQuery: { score: -Infinity, query: "" },
+          worstQuery: { score: Infinity, query: "" },
           brandFreq: {},
           allBrands: new Set(),
           allUrls: new Set(),
@@ -2346,6 +2395,13 @@
           fields.brand && rows[0]
             ? String(fieldVal(rows[0], fields.brand)).trim().toLowerCase()
             : "";
+        const brandRe = brandMatcher(targetBrand);
+
+        // First pass: collect per-row data and aggregate per-query best score.
+        // bestQuery / worstQuery have to be QUERY-level, not ROW-level —
+        // otherwise the same query (with GPT=95, Perplexity=5) ends up as
+        // both "best" and "worst" simultaneously, which is misleading.
+        const queryBestScore = {}; // query -> max score across its rows
 
         rows.forEach((row) => {
           const q = String(fieldVal(row, fields.query)).trim();
@@ -2360,33 +2416,50 @@
             else if (score > 0) out.scoreRanges.low++;
             else out.scoreRanges.none++;
 
-            if (score > out.bestQuery.score)
-              out.bestQuery = { score, query: q };
-            if (score < out.worstQuery.score)
-              out.worstQuery = { score, query: q };
+            if (q) {
+              if (
+                queryBestScore[q] === undefined ||
+                score > queryBestScore[q]
+              ) {
+                queryBestScore[q] = score;
+              }
+            }
           } else {
             out.scoreRanges.none++;
           }
 
           const mentions = extractMentions(row, fields.mentions);
-          mentions.forEach((b) => {
-            out.allBrands.add(b);
-            out.brandFreq[b] = (out.brandFreq[b] || 0) + 1;
+          mentions.forEach((raw) => {
+            // Trim whitespace so "Stella" and "Stella " don't fork into two
+            // entries; collapse variant casings/suffixes via brandKey so
+            // "Stella" / "stella" / "Stella Health Inc" all merge.
+            const display = String(raw).trim();
+            if (!display) return;
+            const key = brandKey(display);
+            if (!key) return;
+            out.allBrands.add(key);
+            if (!out.brandFreq[key]) {
+              out.brandFreq[key] = { displayName: display, count: 0 };
+            }
+            out.brandFreq[key].count += 1;
           });
 
-          if (targetBrand) {
-            const haystack = (
-              fieldVal(row, fields.rawOutput) +
-              " " +
-              mentions.join(" ")
-            ).toLowerCase();
-            if (haystack.includes(targetBrand)) out.brandMentionedRows++;
-          }
+          if (rowMentionsBrand(row, fields, brandRe)) out.brandMentionedRows++;
 
           const urls = extractUrls(row[fields.urls]);
           urls.forEach((u) => out.allUrls.add(u.url));
           const sources = extractUrls(row[fields.sources]);
           sources.forEach((u) => out.allUrls.add(u.url));
+        });
+
+        // Now find the best and worst query by their per-query best score.
+        // We use bestScore across platforms because that's the most useful
+        // signal: a query that scores 95% somewhere is genuinely a win,
+        // even if it scored 0% on the other platforms.
+        Object.entries(queryBestScore).forEach(([q, score]) => {
+          if (score > out.bestQuery.score) out.bestQuery = { score, query: q };
+          if (score < out.worstQuery.score)
+            out.worstQuery = { score, query: q };
         });
 
         out.avgScore =
@@ -2398,9 +2471,10 @@
             ? Math.round((out.brandMentionedRows / rows.length) * 100)
             : 0;
 
-        if (out.bestQuery.score === -1)
+        // Empty-state fallback if no scored queries exist
+        if (out.bestQuery.score === -Infinity)
           out.bestQuery = { score: 0, query: "—" };
-        if (out.worstQuery.score === 999)
+        if (out.worstQuery.score === Infinity)
           out.worstQuery = { score: 0, query: "—" };
 
         return out;
@@ -2432,6 +2506,7 @@
           fields.brand && rows[0]
             ? String(fieldVal(rows[0], fields.brand)).trim().toLowerCase()
             : "";
+        const brandRe = brandMatcher(targetBrand);
 
         const buckets = {};
         rows.forEach((row) => {
@@ -2447,14 +2522,7 @@
             buckets[p].scoreCount++;
           }
 
-          if (targetBrand) {
-            const haystack = (
-              fieldVal(row, fields.rawOutput) +
-              " " +
-              extractMentions(row, fields.mentions).join(" ")
-            ).toLowerCase();
-            if (haystack.includes(targetBrand)) buckets[p].mentioned++;
-          }
+          if (rowMentionsBrand(row, fields, brandRe)) buckets[p].mentioned++;
         });
 
         return Object.entries(buckets)
@@ -2464,8 +2532,10 @@
               key,
               label: opt ? opt.label : key.toUpperCase(),
               rowCount: b.rows.length,
+              // null when no rows had a recorded score — distinct from a real
+              // measured-zero average. Display layer renders null as "—".
               avgScore:
-                b.scoreCount > 0 ? Math.round(b.scoreSum / b.scoreCount) : 0,
+                b.scoreCount > 0 ? Math.round(b.scoreSum / b.scoreCount) : null,
               mentionCount: b.mentioned,
               mentionRate:
                 b.rows.length > 0
@@ -2488,7 +2558,7 @@
       // Returns: { platforms: [...], rows: [{ query, cells: [{platform, score, mentioned, present}] }] }
       // ============================================================
       function buildHeatmap(groups, platforms, fields, targetBrand) {
-        const tb = (targetBrand || "").toLowerCase();
+        const brandRe = brandMatcher((targetBrand || "").toLowerCase());
         return {
           platforms,
           rows: groups.map((g) => ({
@@ -2497,15 +2567,7 @@
               const row = g.byPlatform[p];
               if (!row) return { platform: p, present: false };
               const score = parseScore(fieldVal(row, fields.score));
-              let mentioned = false;
-              if (tb) {
-                const haystack = (
-                  fieldVal(row, fields.rawOutput) +
-                  " " +
-                  extractMentions(row, fields.mentions).join(" ")
-                ).toLowerCase();
-                mentioned = haystack.includes(tb);
-              }
+              const mentioned = rowMentionsBrand(row, fields, brandRe);
               return { platform: p, present: true, score, mentioned };
             }),
           })),
@@ -2522,15 +2584,11 @@
             ? String(fieldVal(rows[0], fields.brand)).trim().toLowerCase()
             : "";
         if (!targetBrand) return [];
+        const brandRe = brandMatcher(targetBrand);
 
         const wins = [];
         rows.forEach((row) => {
-          const haystack = (
-            fieldVal(row, fields.rawOutput) +
-            " " +
-            extractMentions(row, fields.mentions).join(" ")
-          ).toLowerCase();
-          if (haystack.includes(targetBrand)) {
+          if (rowMentionsBrand(row, fields, brandRe)) {
             wins.push({
               query: String(fieldVal(row, fields.query)).trim(),
               platform: normalizePlatform(fieldVal(row, fields.platform)),
@@ -2543,24 +2601,38 @@
       }
 
       // ============================================================
-      // Top cited domains (across urls + sources, both fields merged)
+      // Top cited domains (across urls + sources, both fields merged).
+      // Counts DISTINCT QUERIES the domain appeared in, not raw row count.
+      // (A domain cited on 3 platforms for the same query should count once
+      // — that's still just one query the domain is associated with.)
+      // CDN and infrastructure domains are filtered out so the list
+      // surfaces real publishers, not plumbing.
       // ============================================================
       function buildTopDomains(rows, fields, limit = 15) {
-        const counts = {};
+        // domain -> Set<query>
+        const queriesPerDomain = {};
         rows.forEach((row) => {
+          const q = String(fieldVal(row, fields.query)).trim().toLowerCase();
+          if (!q) return;
           const all = [];
           extractUrls(row[fields.urls]).forEach((u) => all.push(u.url));
           extractUrls(row[fields.sources]).forEach((u) => all.push(u.url));
-          // dedupe per row so a single row citing the same domain twice doesn't double-count
-          const seen = new Set();
+          // dedupe per row so a single row citing the same domain twice
+          // doesn't double-add the query (it's still just one query).
+          const seenInRow = new Set();
           all.forEach((u) => {
             const d = extractDomain(u);
-            if (!d || seen.has(d)) return;
-            seen.add(d);
-            counts[d] = (counts[d] || 0) + 1;
+            if (!d || seenInRow.has(d)) return;
+            // Skip CDNs, asset hosts, and other infrastructure — they appear
+            // as plumbing, not as authoritative sources.
+            if (isInfrastructureDomain(d)) return;
+            seenInRow.add(d);
+            if (!queriesPerDomain[d]) queriesPerDomain[d] = new Set();
+            queriesPerDomain[d].add(q);
           });
         });
-        return Object.entries(counts)
+        return Object.entries(queriesPerDomain)
+          .map(([d, qSet]) => [d, qSet.size])
           .sort((a, b) => b[1] - a[1])
           .slice(0, limit);
       }
@@ -2579,6 +2651,54 @@
             .replace(/^www\./, "");
           return stripped.split("/")[0] || "";
         }
+      }
+
+      // ============================================================
+      // Infrastructure domain filter — CDN, asset hosts, analytics, hosting
+      // platforms. These appear in citations as plumbing, not as authoritative
+      // sources. They should NOT be shown to clients as "top cited domains"
+      // and should NOT enter the LLM payload as if they were publications.
+      //
+      // Kept in sync with the version in website-categorization.html.
+      // ============================================================
+      function isInfrastructureDomain(domain) {
+        const d = String(domain || "").toLowerCase();
+        if (!d) return false;
+        if (/\.cloudfront\.net$/.test(d)) return true;
+        if (/\.akamaihd\.net$/.test(d)) return true;
+        if (/\.akamaized\.net$/.test(d)) return true;
+        if (/\.amazonaws\.com$/.test(d)) return true;
+        if (/\.s3\..*\.amazonaws\.com$/.test(d)) return true;
+        if (/\.fastly\.net$/.test(d)) return true;
+        if (/\.cdn\.cloudflare\.net$/.test(d)) return true;
+        if (/\.azureedge\.net$/.test(d)) return true;
+        if (/\.googleusercontent\.com$/.test(d)) return true;
+        if (/\.gstatic\.com$/.test(d)) return true;
+        if (/\.googleapis\.com$/.test(d)) return true;
+        if (/\.ggpht\.com$/.test(d)) return true;
+        if (/\.cloudinary\.com$/.test(d)) return true;
+        if (/\.imgix\.net$/.test(d)) return true;
+        if (/\.jsdelivr\.net$/.test(d)) return true;
+        if (/\.unpkg\.com$/.test(d)) return true;
+        if (/\.ctfassets\.net$/.test(d)) return true;
+        if (/\.netlify\.app$/.test(d)) return true;
+        if (/\.vercel\.app$/.test(d)) return true;
+        if (/\.herokuapp\.com$/.test(d)) return true;
+        if (/\.firebaseapp\.com$/.test(d)) return true;
+        if (/\.web\.app$/.test(d)) return true;
+        if (/\.pages\.dev$/.test(d)) return true;
+        if (/\.googletagmanager\.com$/.test(d)) return true;
+        if (/\.doubleclick\.net$/.test(d)) return true;
+        if (/\.google-analytics\.com$/.test(d)) return true;
+        if (/\.shopifycdn\.com$/.test(d)) return true;
+        if (/\.wp\.com$/.test(d)) return true;
+        if (
+          /^(assets|static|cdn|media|files|images|img)\./.test(d) &&
+          /\.(net|so|app|io|co)$/.test(d)
+        ) {
+          return true;
+        }
+        return false;
       }
 
       // ============================================================
@@ -2746,8 +2866,12 @@
         });
         html += `<div id="aiSummarySlot"></div>`;
 
-        // Key insights
+        // Key insights — Top 10 most-mentioned brands.
+        // brandFreq is now { brandKey -> { displayName, count } } so variants
+        // collapse rather than competing for slots. Sort by count desc, then
+        // map to a simple [displayName, count] tuple for display.
         const topBrands = Object.entries(insights.brandFreq)
+          .map(([, v]) => [v.displayName, v.count])
           .sort((a, b) => b[1] - a[1])
           .slice(0, 10);
         const maxBrandCount = topBrands.length ? topBrands[0][1] : 1;
@@ -2804,7 +2928,12 @@
         const platformsAll = availablePlatforms();
         if (state.platformFilter === "all" && platformsAll.length > 1) {
           const perfRows = buildPlatformPerf(rows, fields);
-          const maxAvg = Math.max(...perfRows.map((p) => p.avgScore), 1);
+          // Filter out null avgScores before computing the bar-scale max so
+          // a platform with no scored rows can't pollute the scale.
+          const scoredAvgs = perfRows
+            .map((p) => p.avgScore)
+            .filter((s) => s !== null);
+          const maxAvg = scoredAvgs.length > 0 ? Math.max(...scoredAvgs, 1) : 1;
           html += `
         <div class="panel" id="platformPerfPanel">
           <div class="panel-label">Platform Performance ${infoTip("How your brand performs on each AI engine separately (GPT, Perplexity, AI Mode). Shows the visibility score, brand mention count, and mention rate per platform — useful for spotting which engine you are strong on and which needs work.")}</div>
@@ -2822,14 +2951,20 @@
               <tbody>
                 ${perfRows
                   .map((p) => {
+                    const hasScore = p.avgScore !== null;
                     const pctOfMax =
-                      maxAvg > 0 ? Math.max((p.avgScore / maxAvg) * 100, 4) : 0;
+                      hasScore && maxAvg > 0
+                        ? Math.max((p.avgScore / maxAvg) * 100, 4)
+                        : 0;
+                    const avgDisplay = hasScore ? `${p.avgScore}%` : "—";
+                    const avgClass =
+                      hasScore && p.avgScore > 0 ? "accent" : "muted";
                     return `
                     <tr>
                       <td><span class="pp-name">${escapeHtml(p.label)}</span></td>
                       <td>
                         <span class="pp-meter"><div style="width: ${pctOfMax.toFixed(1)}%;"></div></span>
-                        <span class="pp-num ${p.avgScore > 0 ? "accent" : "muted"}">${p.avgScore}%</span>
+                        <span class="pp-num ${avgClass}">${avgDisplay}</span>
                       </td>
                       <td><span class="pp-num ${p.mentionCount > 0 ? "accent" : "muted"}">${p.mentionCount}</span></td>
                       <td><span class="pp-num ${p.mentionRate > 0 ? "accent" : "muted"}">${p.mentionRate}%</span></td>
@@ -2859,16 +2994,24 @@
           );
 
           const cellClass = (cell) => {
+            // No row at all for this query × platform combo
             if (!cell.present) return "empty";
-            if (cell.score === null || cell.score === undefined) return "zero";
+            // Row exists but score field was blank/missing — distinct from a
+            // measured zero. Reuse 'empty' styling so users can tell these
+            // apart visually from a real "0%" score.
+            if (cell.score === null || cell.score === undefined) return "empty";
             if (cell.score >= 70) return "high";
             if (cell.score >= 40) return "med";
             if (cell.score > 0) return "low";
+            // Measured zero — the scoring system actually returned 0. This is
+            // real data (brand wasn't picked up), distinct from no data.
             return "zero";
           };
           const cellLabel = (cell) => {
             if (!cell.present) return "—";
-            if (cell.score === null || cell.score === undefined) return "0";
+            // No-data and measured-zero need to look different. Em-dash for
+            // unknown, "0%" for confirmed zero.
+            if (cell.score === null || cell.score === undefined) return "—";
             return cell.score + "%";
           };
 
@@ -3033,8 +3176,14 @@
         }
 
         // Summary: brands
+        // brandFreq is { brandKey -> { displayName, count } } so each row
+        // shows one unique brand with the canonical name we first saw,
+        // and its merged mention count across all variant casings/suffixes.
+        // Sorted alphabetically by display name for predictable scanning.
         if (insights.allBrands.size > 0) {
-          const sorted = Array.from(insights.allBrands).sort();
+          const sorted = Object.values(insights.brandFreq).sort((a, b) =>
+            a.displayName.localeCompare(b.displayName),
+          );
           html += `
         <div class="panel" id="allBrandsPanel">
           <div class="panel-label">All Brands Mentioned · ${insights.allBrands.size} ${infoTip("Every brand named anywhere in the AI responses across this scan. The full landscape of competitors, partners, and incidental references. Useful raw data for your own competitive analysis.")}</div>
@@ -3043,8 +3192,8 @@
               .map(
                 (b) => `
               <div class="summary-row">
-                <span class="name">${escapeHtml(b)}</span>
-                <span class="count">${insights.brandFreq[b] || 0}</span>
+                <span class="name">${escapeHtml(b.displayName)}</span>
+                <span class="count">${b.count}</span>
               </div>
             `,
               )
