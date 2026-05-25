@@ -1445,6 +1445,30 @@
       function init() {
         const ctx = ToolState.getScanContext();
         if (ctx && ctx.rows.length > 0) {
+          // TEMP DIAGNOSTIC — remove once webhook shape is confirmed.
+          // Logs the keys and a sample row so we can see exactly what the
+          // index-page handoff delivers vs the CSV upload path.
+          console.log("[AEO Competitor] Loaded from ToolState");
+          console.log("[AEO Competitor] Row count:", ctx.rows.length);
+          console.log(
+            "[AEO Competitor] Keys in row[0]:",
+            Object.keys(ctx.rows[0]),
+          );
+          console.log("[AEO Competitor] Full row[0]:", ctx.rows[0]);
+          const mentionKeys = Object.keys(ctx.rows[0]).filter((k) =>
+            /mention/i.test(k),
+          );
+          console.log("[AEO Competitor] Mention-matching keys:", mentionKeys);
+          console.log(
+            "[AEO Competitor] Values at those keys for row[0]:",
+            mentionKeys.map((k) => ({
+              key: k,
+              type: Array.isArray(ctx.rows[0][k])
+                ? "array"
+                : typeof ctx.rows[0][k],
+              value: ctx.rows[0][k],
+            })),
+          );
           renderContinuePanel(ctx);
           els.orDivider.style.display = "flex";
           processRows(ctx.rows);
