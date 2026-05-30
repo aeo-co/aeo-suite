@@ -1644,23 +1644,89 @@
       // canonical-cased display name (whichever form appeared first).
       // ============================================================
       function brandKey(name) {
-        return String(name || "")
-          .toLowerCase()
-          .replace(/\b(inc|llc|ltd|corp|co|the|health|wellness|clinic)\b/g, "")
-          .replace(/[^a-z0-9]+/g, " ")
-          .trim();
+        return (
+          String(name || "")
+            .toLowerCase()
+            .replace(
+              /\b(inc|llc|ltd|corp|co|the|health|wellness|clinic)\b/g,
+              "",
+            )
+            // Collapse ALL non-alphanumeric (including spaces) so spacing variants
+            // merge: "Groove Life" / "Groovelife" / "groove-life" → "groovelife".
+            // Trade-off: rare collisions like "Sun Run" vs "Sunrun" would merge,
+            // but those are far less common than legitimate spacing variants of
+            // the same brand. False merges from this rule are acceptable risk
+            // for our domains; false splits (the bug we're fixing) are not.
+            .replace(/[^a-z0-9]+/g, "")
+            .trim()
+        );
       }
 
       // ============================================================
-      // Build a brand-detection regex once.
-      // Word-boundary matching so a brand like "Cure" doesn't match inside
-      // words like "secure" or "manicure". Multi-word brands match with
-      // literal spaces. Special regex characters are escaped just in case.
+      // Build a brand matcher that can find spacing variants in both
+      // directions. Two-pass design:
+      //
+      //   Pass 1 — tokenize the target, rejoin with \s* so a target like
+      //     "Groove Life" finds both "Groove Life" AND "Groovelife" in
+      //     the haystack via a single regex.
+      //
+      //   Pass 2 — for the harder case where the target is a single dense
+      //     token like "Groovelife" but the haystack has it space-split
+      //     ("Groove Life"), we strip non-alphanumerics from the haystack
+      //     and search for the dense target, while keeping a position map
+      //     so we can re-check word boundaries in the ORIGINAL haystack
+      //     (preserving the "Stella" / "stellar" non-match).
+      //
+      // Both passes preserve word boundaries — "Cure" never matches inside
+      // "Manicure", "Stella" never matches inside "stellar".
       // ============================================================
       function brandMatcher(brandLower) {
         if (!brandLower) return null;
-        const escaped = brandLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        return new RegExp("\\b" + escaped + "\\b", "i");
+        const dense = brandLower.replace(/[^a-z0-9]+/gi, "").toLowerCase();
+        if (!dense) return null;
+        const tokens = brandLower.split(/[^a-z0-9]+/i).filter(Boolean);
+        const escaped = tokens
+          .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("\\s*");
+        return {
+          dense,
+          tokenRe: new RegExp("\\b" + escaped + "\\b", "i"),
+        };
+      }
+
+      // Does the brand appear in the haystack? Tries the token regex first
+      // (fast path, handles ~95% of cases), then falls back to dense
+      // position-aware scan for the cross-spacing case.
+      function brandAppears(matcher, hay) {
+        if (!matcher) return false;
+        if (matcher.tokenRe.test(hay)) return true;
+        // Build a parallel dense string with position map back to original.
+        const lowerHay = String(hay).toLowerCase();
+        const denseChars = [];
+        const positions = [];
+        for (let i = 0; i < lowerHay.length; i++) {
+          const c = lowerHay[i];
+          if ((c >= "a" && c <= "z") || (c >= "0" && c <= "9")) {
+            denseChars.push(c);
+            positions.push(i);
+          }
+        }
+        const denseHay = denseChars.join("");
+        const target = matcher.dense;
+        let searchFrom = 0;
+        while (true) {
+          const idx = denseHay.indexOf(target, searchFrom);
+          if (idx === -1) return false;
+          const startInHay = positions[idx];
+          const endInHay = positions[idx + target.length - 1] + 1;
+          const charBefore = startInHay > 0 ? lowerHay[startInHay - 1] : "";
+          const charAfter =
+            endInHay < lowerHay.length ? lowerHay[endInHay] : "";
+          const beforeIsWord = /[a-z0-9_]/.test(charBefore);
+          const afterIsWord = /[a-z0-9_]/.test(charAfter);
+          if (!beforeIsWord && !afterIsWord) return true;
+          searchFrom = idx + 1;
+        }
       }
 
       // True if the target brand string appears in this row's text.
@@ -1673,7 +1739,7 @@
           fieldVal(row, fields.rawOutput) +
           " " +
           fields.mentions.map((k) => fieldVal(row, k)).join(" ");
-        return brandRe.test(hay);
+        return brandAppears(brandRe, hay);
       }
 
       // ============================================================
@@ -2695,7 +2761,7 @@
         // v2: brand-mention detection switched from substring to word-boundary
         // matching. Numbers feeding the LLM can shift, so invalidate older
         // cached summaries.
-        return `aeo:summary:competitor:v2:${state.targetBrandLower}:${rows.length}:${firstDate}`;
+        return `aeo:summary:competitor:v4:${state.targetBrandLower}:${rows.length}:${firstDate}`;
       }
 
       function readSummaryCache(key) {
@@ -2877,7 +2943,7 @@
           ? String(fieldVal(rows[0], state.fields?.date) || "")
           : "";
         // v2: see summaryCacheKey — same reason.
-        return `aeo:messaging:competitor:v2:${state.targetBrandLower}:${rows.length}:${firstDate}`;
+        return `aeo:messaging:competitor:v4:${state.targetBrandLower}:${rows.length}:${firstDate}`;
       }
 
       function readMessagingCache(k) {
