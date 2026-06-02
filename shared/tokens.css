@@ -1217,58 +1217,192 @@ button {
 }
 
 /* Cover page */
+/* ============================================================
+   PDF Cover Page — AEO.co branded
+   ============================================================
+   Dark green-black canvas with the AEO.co logo, report title,
+   client/format footer fields, and the bright-green bottom band.
+   Hidden on screen; shown only in PDF mode. The cover renders as
+   page 1; subsequent pages get the running header/footer (below).
+   ============================================================ */
+:root {
+  --aeo-brand-green: #80e088;
+  --aeo-brand-dark: #080c08;
+  --aeo-brand-cream: #f5f8ef;
+  --aeo-brand-ink: #1a201a;
+}
 .pdf-cover {
   display: none;
-  padding: 60px 32px;
-  text-align: center;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 24px;
+  position: relative;
+  z-index: 5;
   flex-direction: column;
+  justify-content: flex-start;
+  background: var(--aeo-brand-dark);
+  color: var(--aeo-brand-green);
+  padding: 22mm 18mm 22mm 18mm;
+  box-sizing: border-box;
+}
+.pdf-cover-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.pdf-cover-brand {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 90vh;
+  gap: 12px;
 }
-.pdf-cover-inner {
-  max-width: 600px;
-  width: 100%;
+.pdf-cover-brand .aeo-mark {
+  width: 38px;
+  height: 38px;
+  color: var(--aeo-brand-green);
 }
-.pdf-cover .cover-prepared {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ink-faint);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
-.pdf-cover .cover-client {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 44px;
-  line-height: 1.1;
-  color: var(--ink);
+.pdf-cover-brand .wordmark {
+  font-family: "Helvetica Neue", Arial, "Inter", system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 400;
   letter-spacing: -0.01em;
-  margin-bottom: 18px;
+  color: var(--aeo-brand-green);
+  line-height: 1;
 }
-.pdf-cover .cover-client em {
-  color: var(--accent);
+.pdf-cover-brand .wordmark .co {
+  font-size: 0.78em;
 }
-.pdf-cover .cover-intro {
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--ink-mute);
-  margin: 0 auto;
-  text-align: left;
+.pdf-cover-tagline {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--aeo-brand-green);
+  text-transform: uppercase;
+  padding-top: 12px;
+}
+.pdf-cover-poweredby {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 9px;
+  color: #787a77;
+  letter-spacing: 0.02em;
+}
+.pdf-cover-poweredby .sm-mark {
+  font-weight: 700;
+  color: #d8dde0;
+}
+.pdf-cover-title-block {
+  margin-top: 70mm;
+  /* Visual centre of the page minus a bit for asymmetric tension */
+}
+.pdf-cover-accent {
+  width: 70px;
+  height: 3px;
+  background: var(--aeo-brand-green);
+  margin-bottom: 16px;
+}
+.pdf-cover-title {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--aeo-brand-cream);
+  margin: 0 0 12px 0;
+}
+.pdf-cover-subtitle {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #c8d0c8;
+  line-height: 1.55;
+  max-width: 110mm;
+  margin: 0;
   white-space: pre-wrap;
 }
-.pdf-cover .cover-intro:empty {
+.pdf-cover-subtitle:empty {
   display: none;
 }
+.pdf-cover-foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 50mm;
+  border-top: 1px solid rgba(128, 224, 136, 0.18);
+  padding-top: 12mm;
+}
+.pdf-cover-foot .label {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--aeo-brand-cream);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.pdf-cover-foot .value {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--aeo-brand-cream);
+  border-bottom: 1px solid rgba(128, 224, 136, 0.35);
+  padding-bottom: 4px;
+  min-height: 1.4em;
+}
+.pdf-cover-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12mm;
+  background: var(--aeo-brand-green);
+  color: var(--aeo-brand-dark);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  padding: 0 18mm;
+  box-sizing: border-box;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pdf-cover-band .right {
+  text-align: right;
+}
+.pdf-cover-band .mid {
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.pdf-cover-band .mid .sm-smart {
+  color: #1a52a0;
+}
+.pdf-cover-band .mid .sm-dot {
+  color: #1a52a0;
+  padding: 0 2px;
+}
+.pdf-cover-band .mid .sm-marketer {
+  color: #1a4a18;
+}
+
 body.pdf-mode .pdf-cover.has-content {
   display: flex;
 }
 body.pdf-mode .hidden-for-pdf {
   display: none !important;
 }
+
+/* ============================================================
+   Running header / footer for inner pages — via @page margin boxes.
+   Chrome and most modern browsers reliably repeat content set on
+   @page margin boxes on every printed page. Limitation: only `content`
+   strings are supported (no SVG/HTML), so the running chrome is
+   text-only. We keep the AEO.co wordmark and the smart·marketer line.
+   The first page (cover) gets `margin: 0` and empty margin boxes,
+   so the cover bleeds full and the running chrome is suppressed there.
+   ============================================================ */
 
 /* PDF mode — chrome and editing UI hidden */
 body.pdf-mode .topbar,
@@ -1294,8 +1428,81 @@ body.pdf-mode .info-tip {
 
   @page {
     size: A4;
-    margin: 8mm 6mm;
+    /* Top margin reserves space for the running header.
+       Bottom margin reserves space for the running footer.
+       Side margins kept tight to maximise content width. */
+    margin: 18mm 8mm 14mm 8mm;
     background: var(--bg-0);
+
+    @top-left {
+      content: "AEO.co";
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 12pt;
+      font-weight: 500;
+      color: #c8d0c8;
+      padding-left: 6mm;
+      padding-top: 6mm;
+    }
+    @top-right {
+      content: "Answer Engine Optimization";
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #80e088;
+      padding-right: 6mm;
+      padding-top: 6mm;
+    }
+    @bottom-left {
+      content: "AEO.CO";
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #80e088;
+      padding-left: 6mm;
+      padding-bottom: 4mm;
+    }
+    @bottom-center {
+      content: "smart \00b7 marketer";
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+      font-size: 8pt;
+      font-weight: 700;
+      color: #80e088;
+      padding-bottom: 4mm;
+    }
+    @bottom-right {
+      content: "platform.aeo.co";
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+      font-size: 8pt;
+      font-weight: 700;
+      color: #80e088;
+      padding-right: 6mm;
+      padding-bottom: 4mm;
+    }
+  }
+
+  /* Cover page (first printed page) — no @page margins or header/footer
+     so the dark cover bleeds full and our cover element controls every
+     pixel of that page. */
+  @page :first {
+    margin: 0;
+    @top-left {
+      content: none;
+    }
+    @top-right {
+      content: none;
+    }
+    @bottom-left {
+      content: none;
+    }
+    @bottom-center {
+      content: none;
+    }
+    @bottom-right {
+      content: none;
+    }
   }
 
   html,
@@ -1378,22 +1585,28 @@ body.pdf-mode .info-tip {
     font-size: clamp(22px, 3.5vw, 32px) !important;
   }
 
-  /* Cover page — fixed mm height so flex centering works
-     without spilling into a blank second page */
+  /* Cover page — full-bleed A4 with the AEO.co dark theme.
+     Page break after the cover so subsequent content starts on page 2.
+     We override the page background so the cover renders edge-to-edge. */
   .pdf-cover.has-content {
     display: flex !important;
     flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
     page-break-after: always;
     break-after: page;
-    height: 260mm !important;
+    height: 297mm !important; /* A4 height */
     min-height: 0 !important;
-    padding: 20mm 10mm !important;
+    padding: 22mm 18mm 18mm 18mm !important;
     border-bottom: none !important;
-    background: var(--bg-0) !important;
+    background: var(--aeo-brand-dark) !important;
     margin: 0 !important;
     box-sizing: border-box;
+    position: relative;
+  }
+  /* When the cover is present, that page needs no @page margins
+     (the cover already pads itself). Other pages get headed-paper
+     margins so the running header/footer don't overlap content. */
+  @page :first {
+    margin: 0;
   }
 
   /* Force gradients to render */
