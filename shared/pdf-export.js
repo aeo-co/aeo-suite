@@ -91,6 +91,56 @@
     }
   }
 
+  // ============================================================
+  // Filename for the downloaded PDF
+  // ============================================================
+  // Browsers use document.title as the suggested filename when the
+  // user prints to PDF. We swap it to "ClientName - Report - Date"
+  // right before window.print() and restore the original afterwards.
+  // Each segment is stripped of filesystem-unsafe characters and has
+  // internal whitespace collapsed. If no client name is entered, that
+  // segment is dropped entirely (no leading dash).
+  function buildPdfFilename() {
+    const clientNameEl = document.getElementById('pdfClientName');
+    const clientName = clientNameEl ? (clientNameEl.value || '').trim() : '';
+    const reportTitle = resolveReportTitle();
+    const date = formattedToday();
+
+    const sanitize = (s) => String(s == null ? '' : s)
+      .replace(/[\/\\:*?"<>|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const parts = [];
+    const cn = sanitize(clientName);
+    if (cn) parts.push(cn);
+    parts.push(sanitize(reportTitle));
+    parts.push(sanitize(date));
+    return parts.filter(Boolean).join(' - ');
+  }
+
+  // Lazy-capture of the original <title>. Null-guarded so that if a
+  // previous afterprint failed to fire, we don't capture the modified
+  // title as the new "original" on the next print attempt.
+  let originalTitle = null;
+
+  function printWithFilename() {
+    if (originalTitle === null) originalTitle = document.title;
+    // Compute the new title first, THEN assign — resolveReportTitle()
+    // may read document.title as a fallback, so we must read before
+    // we write.
+    const newTitle = buildPdfFilename();
+    document.title = newTitle;
+    window.print();
+  }
+
+  function restoreOriginalTitle() {
+    if (originalTitle !== null) {
+      document.title = originalTitle;
+      originalTitle = null;
+    }
+  }
+
   // Replace the inside of the old cover scaffold with the new branded
   // markup. Called once during init() so report HTML files don't need
   // their cover scaffolds rewritten individually.
@@ -226,7 +276,7 @@
       hidePreviewToolbar();
     });
     document.getElementById('pdfGenerateFromPreviewBtn').addEventListener('click', () => {
-      setTimeout(() => window.print(), 50);
+      setTimeout(() => printWithFilename(), 50);
     });
   }
 
@@ -269,13 +319,14 @@
       generateBtn.addEventListener('click', () => {
         applyPdfMode();
         closePanel();
-        setTimeout(() => window.print(), 150);
+        setTimeout(() => printWithFilename(), 150);
       });
     }
 
     window.addEventListener('afterprint', () => {
       exitPdfMode();
       hidePreviewToolbar();
+      restoreOriginalTitle();
     });
   }
 
