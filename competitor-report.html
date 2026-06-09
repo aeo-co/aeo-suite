@@ -1583,8 +1583,26 @@
       // ============================================================
       // Field resolution
       // ============================================================
-      function resolveFields(sampleRow) {
-        const keys = Object.keys(sampleRow);
+      function resolveFields(rowsOrSample) {
+        // Accept either a single sample row (legacy) or an array of rows.
+        // When given an array, build the UNION of keys across all rows.
+        //
+        // Why: a sparse first row (e.g., n8n returns an empty Mention 1..N on
+        // row 1 because the AI didn't list any brands for that query/platform)
+        // would cause /mention/i.test(k) to match zero keys, making
+        // fields.mentions an empty array — which then makes EVERY subsequent
+        // row's mentions get silently ignored. Looking across all rows means
+        // any row that has the field announces it to the resolver.
+        const sources = Array.isArray(rowsOrSample)
+          ? rowsOrSample
+          : [rowsOrSample];
+        const keySet = new Set();
+        sources.forEach((row) => {
+          if (row && typeof row === "object") {
+            Object.keys(row).forEach((k) => keySet.add(k));
+          }
+        });
+        const keys = Array.from(keySet);
         const norm = (k) =>
           String(k)
             .trim()
@@ -1922,7 +1940,7 @@
         }
 
         state.rows = rows;
-        state.fields = resolveFields(rows[0]);
+        state.fields = resolveFields(rows);
         state.targetBrand = String(
           fieldVal(rows[0], state.fields.brand) || "",
         ).trim();

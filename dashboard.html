@@ -1167,6 +1167,601 @@
         font-style: italic;
       }
 
+      /* ---------- Query Owners ---------- */
+      /* One row per query showing who's #1 across platforms. Outcome
+     badges visually echo our scoreClass colors: green = you own it,
+     amber = contested, red = dominated by competitor, dashed = open. */
+      .owners-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .owners-summary {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .owners-summary .os-cell {
+        padding: 12px 14px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+      }
+      .owners-summary .os-cell .os-count {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 24px;
+        line-height: 1;
+        margin-bottom: 2px;
+      }
+      .owners-summary .os-cell .os-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+      }
+      .owners-summary .os-cell.you .os-count {
+        color: var(--ok);
+      }
+      .owners-summary .os-cell.you {
+        border-color: rgba(127, 191, 140, 0.35);
+        background: linear-gradient(
+          135deg,
+          rgba(127, 191, 140, 0.06) 0%,
+          var(--bg-0) 100%
+        );
+      }
+      .owners-summary .os-cell.them .os-count {
+        color: var(--bad);
+      }
+      .owners-summary .os-cell.them {
+        border-color: rgba(217, 122, 111, 0.35);
+        background: linear-gradient(
+          135deg,
+          rgba(217, 122, 111, 0.06) 0%,
+          var(--bg-0) 100%
+        );
+      }
+      .owners-summary .os-cell.contested .os-count {
+        color: var(--warn);
+      }
+      .owners-summary .os-cell.contested {
+        border-color: rgba(232, 184, 106, 0.35);
+        background: linear-gradient(
+          135deg,
+          rgba(232, 184, 106, 0.06) 0%,
+          var(--bg-0) 100%
+        );
+      }
+      .owners-summary .os-cell.open .os-count {
+        color: var(--accent);
+      }
+      .owners-summary .os-cell.open {
+        border-style: dashed;
+      }
+
+      .owner-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 14px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-left-width: 3px;
+        border-radius: var(--radius-sm);
+      }
+      .owner-row.you-own {
+        border-left-color: var(--ok);
+        background: linear-gradient(
+          135deg,
+          rgba(127, 191, 140, 0.04) 0%,
+          var(--bg-0) 100%
+        );
+      }
+      .owner-row.dominated {
+        border-left-color: var(--bad);
+      }
+      .owner-row.contested {
+        border-left-color: var(--warn);
+      }
+      .owner-row.open {
+        border-left-style: dashed;
+        border-left-color: var(--accent);
+      }
+
+      .owner-row .or-q {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 15px;
+        color: var(--ink);
+        line-height: 1.3;
+      }
+      .owner-row .or-winner {
+        font-size: 13px;
+        color: var(--ink);
+        min-width: 0;
+      }
+      .owner-row .or-winner .label {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--ink-faint);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .owner-row .or-winner .name {
+        font-weight: 600;
+      }
+      .owner-row.you-own .or-winner .name {
+        color: var(--ok);
+      }
+      .owner-row.dominated .or-winner .name {
+        color: var(--bad);
+      }
+      .owner-row .or-badge {
+        flex-shrink: 0;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid;
+      }
+      .owner-row.you-own .or-badge {
+        color: var(--ok);
+        border-color: rgba(127, 191, 140, 0.4);
+        background: rgba(127, 191, 140, 0.1);
+      }
+      .owner-row.dominated .or-badge {
+        color: var(--bad);
+        border-color: rgba(217, 122, 111, 0.4);
+        background: rgba(217, 122, 111, 0.1);
+      }
+      .owner-row.contested .or-badge {
+        color: var(--warn);
+        border-color: rgba(232, 184, 106, 0.4);
+        background: rgba(232, 184, 106, 0.1);
+      }
+      .owner-row.open .or-badge {
+        color: var(--accent);
+        border-color: rgba(232, 184, 106, 0.3);
+      }
+
+      .owner-row .or-platforms {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+        padding-top: 10px;
+        border-top: 1px dashed var(--line);
+      }
+      .owner-row .or-platforms .pp {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-mute);
+      }
+      .owner-row .or-platforms .pp .plat-name {
+        color: var(--ink-faint);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 10px;
+      }
+      .owner-row .or-platforms .pp .winner-name {
+        color: var(--ink);
+      }
+      .owner-row .or-platforms .pp.is-you .winner-name {
+        color: var(--ok);
+        font-weight: 600;
+      }
+
+      /* ---------- Zero-Visibility Queries ---------- */
+      /* Hard-miss queries — brand wasn't named on ANY platform. We surface
+     who DID own the query and which domains were cited so the user has
+     concrete next-step targets, not just a list of failures. */
+      .zerovis-row {
+        padding: 14px 16px;
+        background: linear-gradient(
+          135deg,
+          rgba(217, 122, 111, 0.04) 0%,
+          transparent 100%
+        );
+        border: 1px solid rgba(217, 122, 111, 0.22);
+        border-left: 3px solid var(--bad);
+        border-radius: var(--radius-sm);
+        margin-bottom: 10px;
+      }
+      .zerovis-row:last-child {
+        margin-bottom: 0;
+      }
+      .zerovis-row .zv-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+      }
+      .zerovis-row .zv-q {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 16px;
+        color: var(--ink);
+        line-height: 1.3;
+        flex: 1;
+        min-width: 0;
+      }
+      .zerovis-row .zv-state {
+        flex-shrink: 0;
+        padding: 4px 10px;
+        background: rgba(217, 122, 111, 0.15);
+        border: 1px solid rgba(217, 122, 111, 0.35);
+        border-radius: 999px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--bad);
+      }
+      .zerovis-row .zv-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--line);
+      }
+      .zerovis-row .zv-meta-block .zv-meta-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin-bottom: 4px;
+      }
+      .zerovis-row .zv-meta-block .zv-meta-value {
+        font-size: 13px;
+        color: var(--ink);
+        line-height: 1.45;
+      }
+      .zerovis-row .zv-meta-block .zv-meta-value.muted {
+        color: var(--ink-mute);
+        font-style: italic;
+      }
+      .zerovis-row .zv-meta-block .zv-meta-value .winner-name {
+        font-weight: 600;
+      }
+      .zerovis-row .zv-domains {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .zerovis-row .zv-domains .zv-dom {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-mute);
+        padding: 2px 8px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+      }
+
+      /* Wider screens: pack owners 2-up */
+      @media (min-width: 900px) {
+        .owners-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        .owners-summary {
+          grid-template-columns: 1fr 1fr;
+        }
+        .zerovis-row .zv-meta {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ---------- Rank Distribution ---------- */
+      /* Horizontal stacked bar showing how often the brand lands in each
+     rank bucket (Top, Prominent, Mid, Deep), plus a small grid of
+     per-platform breakdowns and a couple of example rows. */
+      .rank-headline {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .rank-headline .rh-num {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 44px;
+        line-height: 1;
+        color: var(--ok);
+      }
+      .rank-headline .rh-num.muted {
+        color: var(--ink-mute);
+      }
+      .rank-headline .rh-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin-bottom: 4px;
+      }
+      .rank-headline .rh-detail {
+        font-size: 13px;
+        color: var(--ink);
+        line-height: 1.5;
+      }
+      .rank-headline .rh-detail em {
+        color: var(--accent);
+        font-style: italic;
+      }
+
+      .rank-bar {
+        display: flex;
+        height: 28px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: var(--bg-0);
+        margin-bottom: 6px;
+      }
+      /* rb-seg styles work for both the headline .rank-bar AND the per-platform
+     .rp-bar mini-bars. Keeping colors at .rb-seg level (not nested under
+     .rank-bar) means both bars stay in sync visually. */
+      .rb-seg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--bg-0);
+        transition: opacity 0.15s;
+      }
+      .rb-seg.top {
+        background: var(--ok);
+      }
+      .rb-seg.prominent {
+        background: rgba(127, 191, 140, 0.55);
+        color: var(--bg-0);
+      }
+      .rb-seg.mid {
+        background: var(--warn);
+      }
+      .rb-seg.deep {
+        background: var(--bad);
+      }
+      /* The main .rank-bar prints "60%" labels inside its segments. The
+     per-platform .rp-bar mini-bars are intentionally text-free.
+     Scoping :empty to .rank-bar prevents the mini-bars from being
+     hidden just because they have no inner text. */
+      .rank-bar .rb-seg:empty {
+        display: none;
+      }
+
+      .rank-bar-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--ink-mute);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 18px;
+      }
+      .rank-bar-legend .rbl-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .rank-bar-legend .swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        display: inline-block;
+      }
+      .rank-bar-legend .swatch.top {
+        background: var(--ok);
+      }
+      .rank-bar-legend .swatch.prominent {
+        background: rgba(127, 191, 140, 0.55);
+      }
+      .rank-bar-legend .swatch.mid {
+        background: var(--warn);
+      }
+      .rank-bar-legend .swatch.deep {
+        background: var(--bad);
+      }
+
+      /* Per-platform mini-distribution */
+      .rank-platforms {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .rank-platforms .rp-block {
+        padding: 10px 12px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+      }
+      .rank-platforms .rp-name {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin-bottom: 6px;
+      }
+      .rank-platforms .rp-bar {
+        display: flex;
+        height: 14px;
+        border-radius: 3px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .rank-platforms .rp-stats {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--ink-mute);
+        margin-top: 4px;
+      }
+
+      /* Examples */
+      .rank-examples {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 10px;
+      }
+      .rank-example-group .reg-head {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin-bottom: 6px;
+      }
+      .rank-example-group .reg-ex {
+        padding: 8px 10px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .rank-example-group .reg-ex .reg-q {
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--ink);
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      .rank-example-group .reg-ex .reg-meta {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--ink-mute);
+        letter-spacing: 0.04em;
+      }
+      .rank-example-group .reg-ex .reg-slot {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      /* ---------- Positioning Themes ---------- */
+      .themes-note {
+        padding: 12px 14px;
+        background: rgba(232, 184, 106, 0.05);
+        border: 1px dashed rgba(232, 184, 106, 0.3);
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        color: var(--ink-mute);
+        line-height: 1.5;
+        margin-bottom: 18px;
+      }
+      .themes-note a,
+      .themes-note .themes-link {
+        color: var(--accent);
+        text-decoration: underline;
+        text-decoration-style: dotted;
+      }
+      .themes-note .themes-link {
+        cursor: pointer;
+        background: none;
+        border: none;
+        font-family: inherit;
+        font-size: inherit;
+        padding: 0;
+      }
+
+      .themes-section + .themes-section {
+        margin-top: 22px;
+      }
+      .themes-section-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin-bottom: 10px;
+      }
+      .phrases-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 8px;
+      }
+      .phrase-row {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: baseline;
+        padding: 10px 12px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+      }
+      .phrase-row .pr-count {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 20px;
+        color: var(--accent);
+        line-height: 1;
+      }
+      .phrase-row .pr-body {
+        min-width: 0;
+      }
+      .phrase-row .pr-phrase {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--ink);
+        line-height: 1.3;
+        margin-bottom: 2px;
+        word-break: break-word;
+      }
+      .phrase-row .pr-meta {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--ink-faint);
+        letter-spacing: 0.04em;
+      }
+
+      .signals-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .signal-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink);
+      }
+      .signal-chip .sc-count {
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--accent);
+        font-size: 13px;
+      }
+
       /* ---------- Top cited domains ---------- */
       .domain-row {
         display: flex;
@@ -1403,14 +1998,14 @@
         </div>
       </section>
 
-      <!-- Cover page — only shown in PDF mode when customized -->
-      <div class="pdf-cover" id="pdfCover">
-        <div class="pdf-cover-inner">
-          <div class="cover-prepared">AI Visibility Report · Prepared for</div>
-          <div class="cover-client" id="pdfCoverClient"></div>
-          <div class="cover-intro" id="pdfCoverIntro"></div>
-        </div>
-      </div>
+      <!-- Cover page — branded markup is injected by pdf-export.js at init.
+       The data-report-title attribute tells the export module what to
+       print as the report title on the cover. -->
+      <div
+        class="pdf-cover"
+        id="pdfCover"
+        data-report-title="AI Visibility Report"
+      ></div>
 
       <!-- Report renders here once data is loaded -->
       <section id="reportRoot"></section>
@@ -1511,6 +2106,22 @@
               <label class="pdf-toggle"
                 ><input type="checkbox" data-target="heatmapPanel" checked />
                 <span class="label">Visibility Heatmap</span></label
+              >
+              <label class="pdf-toggle"
+                ><input
+                  type="checkbox"
+                  data-target="queryOwnersPanel"
+                  checked
+                />
+                <span class="label">Query Owners</span></label
+              >
+              <label class="pdf-toggle"
+                ><input type="checkbox" data-target="zeroVisPanel" checked />
+                <span class="label">Zero-Visibility Queries</span></label
+              >
+              <label class="pdf-toggle"
+                ><input type="checkbox" data-target="rankDistPanel" checked />
+                <span class="label">Rank Distribution</span></label
               >
               <label class="pdf-toggle"
                 ><input type="checkbox" data-target="winsPanel" checked />
@@ -1728,8 +2339,26 @@
       // Field resolution: map fuzzy header keys to canonical names.
       // Handles trailing spaces, typos like "Visbility score ", etc.
       // ============================================================
-      function resolveFields(sampleRow) {
-        const keys = Object.keys(sampleRow);
+      function resolveFields(rowsOrSample) {
+        // Accept either a single sample row (legacy) or an array of rows.
+        // When given an array, build the UNION of keys across all rows.
+        //
+        // Why: a sparse first row (e.g., n8n returns an empty Mention 1..N on
+        // row 1 because the AI didn't list any brands for that query/platform)
+        // would cause /mention/i.test(k) to match zero keys, making
+        // fields.mentions an empty array — which then makes EVERY subsequent
+        // row's mentions get silently ignored. Looking across all rows means
+        // any row that has the field announces it to the resolver.
+        const sources = Array.isArray(rowsOrSample)
+          ? rowsOrSample
+          : [rowsOrSample];
+        const keySet = new Set();
+        sources.forEach((row) => {
+          if (row && typeof row === "object") {
+            Object.keys(row).forEach((k) => keySet.add(k));
+          }
+        });
+        const keys = Array.from(keySet);
         const norm = (k) =>
           String(k)
             .trim()
@@ -1823,8 +2452,52 @@
       // ============================================================
       function brandMatcher(brandLower) {
         if (!brandLower) return null;
-        const escaped = brandLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        return new RegExp("\\b" + escaped + "\\b", "i");
+        const dense = brandLower.replace(/[^a-z0-9]+/gi, "").toLowerCase();
+        if (!dense) return null;
+        const tokens = brandLower.split(/[^a-z0-9]+/i).filter(Boolean);
+        const escaped = tokens
+          .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("\\s*");
+        return {
+          dense,
+          tokenRe: new RegExp("\\b" + escaped + "\\b", "i"),
+        };
+      }
+
+      // Does the brand appear in the haystack? Tries the token regex (fast,
+      // handles most cases), then falls back to a dense position-aware scan
+      // so a single-word target like "Groovelife" can also find "Groove Life"
+      // in raw text. Preserves word boundaries either way ("Stella" never
+      // matches inside "stellar").
+      function brandAppears(matcher, hay) {
+        if (!matcher) return false;
+        if (matcher.tokenRe.test(hay)) return true;
+        const lowerHay = String(hay).toLowerCase();
+        const denseChars = [];
+        const positions = [];
+        for (let i = 0; i < lowerHay.length; i++) {
+          const c = lowerHay[i];
+          if ((c >= "a" && c <= "z") || (c >= "0" && c <= "9")) {
+            denseChars.push(c);
+            positions.push(i);
+          }
+        }
+        const denseHay = denseChars.join("");
+        const target = matcher.dense;
+        let searchFrom = 0;
+        while (true) {
+          const idx = denseHay.indexOf(target, searchFrom);
+          if (idx === -1) return false;
+          const startInHay = positions[idx];
+          const endInHay = positions[idx + target.length - 1] + 1;
+          const charBefore = startInHay > 0 ? lowerHay[startInHay - 1] : "";
+          const charAfter =
+            endInHay < lowerHay.length ? lowerHay[endInHay] : "";
+          const beforeIsWord = /[a-z0-9_]/.test(charBefore);
+          const afterIsWord = /[a-z0-9_]/.test(charAfter);
+          if (!beforeIsWord && !afterIsWord) return true;
+          searchFrom = idx + 1;
+        }
       }
 
       // True if the target brand appears in the AI response or mentions for
@@ -1836,24 +2509,26 @@
           fieldVal(row, fields.rawOutput) +
           " " +
           extractMentions(row, fields.mentions).join(" ");
-        return brandRe.test(hay);
+        return brandAppears(brandRe, hay);
       }
 
-      // Normalize a brand name to a canonical key so variant casings and
-      // whitespace collapse into one entry. "Stella" / "Stella " / "stella"
-      // / "Stella Health Inc" all → "stella".
+      // Normalize a brand name to a canonical key so variant casings,
+      // whitespace, and spacing collapse into one entry. "Stella" / "stella"
+      // / "Stella Health Inc" → "stella". "Groove Life" / "Groovelife" /
+      // "groove-life" → "groovelife".
       //
       // Strips common industry suffixes (inc, llc, health, wellness, clinic
       // etc.) — same behavior as competitor-report.html so the two reports
-      // agree on what counts as the same brand. Trade-off documented there:
-      // could collapse genuinely-distinct brands like "Modern Health" vs
-      // "Modern Wellness", but in practice it's the right call for our
-      // primary verticals.
+      // agree on what counts as the same brand. Trade-offs documented there:
+      // could collapse "Modern Health" vs "Modern Wellness" (suffix strip)
+      // or "Sun Run" vs "Sunrun" (space collapse), but in practice this is
+      // the right call — false splits like "Groove Life" vs "Groovelife"
+      // are much more common than false merges.
       function brandKey(name) {
         return String(name || "")
           .toLowerCase()
           .replace(/\b(inc|llc|ltd|corp|co|the|health|wellness|clinic)\b/g, "")
-          .replace(/[^a-z0-9]+/g, " ")
+          .replace(/[^a-z0-9]+/g, "")
           .trim();
       }
 
@@ -2064,8 +2739,7 @@
 
       // Set this to your real n8n endpoint when ready. While empty,
       // the summary panel shows an "unavailable" state without breaking.
-      const SUMMARY_WEBHOOK =
-        "https://n8n-smartmarketer.duckdns.org/webhook/summary-dashboard";
+      const SUMMARY_WEBHOOK = "";
 
       // Cache key derived from scan content + active platform filter so each
       // view (All / GPT / Perplexity / AI Mode) gets its own cached summary.
@@ -2074,11 +2748,12 @@
           ? String(fieldVal(rows[0], state.fields?.date) || "")
           : "";
         const filter = state.platformFilter || "all";
-        // v3: topCitedDomains semantics changed from row-count to distinct-
-        // query count, and topMentionedBrands now uses normalized brand keys
-        // so variant casings/whitespace collapse. Numbers feeding the LLM
-        // have shifted, so invalidate older cached summaries.
-        return `aeo:summary:dashboard:v3:${String(brand).toLowerCase()}:${filter}:${rows.length}:${firstDate}`;
+        // v7: LLM payload now also includes rankDistribution (top-slot rate,
+        // bucket counts, avg/median slot when brand IS mentioned) and
+        // positioningThemes (top recurring phrases and curated signal
+        // keywords from competitor-analysis text). Older cached summaries
+        // miss these fields, so regenerate.
+        return `aeo:summary:dashboard:v7:${String(brand).toLowerCase()}:${filter}:${rows.length}:${firstDate}`;
       }
 
       function readSummaryCache(key) {
@@ -2135,6 +2810,90 @@
           queries: c,
         }));
 
+        // Query Owners — adds strategic context the LLM can use: "you own
+        // N queries, M are open / greenfield, K are dominated by [competitor]."
+        // We summarise to counts + a short list of representative examples
+        // rather than dumping all queries (the perQuery field below already
+        // has every query; this adds the slot-1 lens on top).
+        const queryOwnersBuilt = buildQueryOwners(groups, fields, brand);
+        const ownerSummary = { youOwn: 0, dominated: 0, contested: 0, open: 0 };
+        const dominatorTally = {}; // competitor brand → count of queries they dominate
+        const youOwnExamples = [];
+        const openExamples = [];
+        const dominatedExamples = [];
+        queryOwnersBuilt.forEach((o) => {
+          if (o.outcome === "YOU_OWN") {
+            ownerSummary.youOwn++;
+            if (youOwnExamples.length < 3) youOwnExamples.push(o.query);
+          } else if (o.outcome === "OPEN") {
+            ownerSummary.open++;
+            if (openExamples.length < 3) openExamples.push(o.query);
+          } else if (o.outcome === "CONTESTED") {
+            ownerSummary.contested++;
+          } else if (o.outcome === "DOMINATED") {
+            ownerSummary.dominated++;
+            if (!dominatorTally[o.winnerKey]) {
+              dominatorTally[o.winnerKey] = { name: o.winner, count: 0 };
+            }
+            dominatorTally[o.winnerKey].count++;
+            if (dominatedExamples.length < 3) {
+              dominatedExamples.push({ query: o.query, winner: o.winner });
+            }
+          }
+        });
+        const topDominators = Object.values(dominatorTally)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        // Zero-visibility queries — count + a few examples for the LLM.
+        const zeroVisBuilt = buildZeroVisQueries(
+          groups,
+          fields,
+          brand,
+          queryOwnersBuilt,
+        );
+        const zeroVisExamples = zeroVisBuilt.slice(0, 5).map((z) => ({
+          query: z.query,
+          winner: z.owner && z.owner.winner ? z.owner.winner : null,
+          topDomain: z.topDomains[0] || null,
+        }));
+
+        // Rank distribution — when the brand IS named, where does it sit?
+        // The LLM gets the bucket counts and a couple of summary numbers
+        // so it can write sentences like "Groovelife lands at slot #1
+        // in 60% of the responses where it appears, with an average
+        // ranking of #1.8 across the scan."
+        const rankDistBuilt = buildRankDistribution(rows, fields, brand);
+        const rankSummary = {
+          totalMentions: rankDistBuilt.total,
+          byBucket: rankDistBuilt.byBucket,
+          topSlotPct:
+            rankDistBuilt.total > 0
+              ? Math.round(
+                  (rankDistBuilt.byBucket.Top / rankDistBuilt.total) * 100,
+                )
+              : 0,
+          avgSlot: rankDistBuilt.avgSlot,
+          medianSlot: rankDistBuilt.medianSlot,
+        };
+
+        // Positioning themes — recurring phrases + signal keywords. We send
+        // the top items only so the LLM payload doesn't bloat. This is
+        // pattern-matching, not semantic analysis; the LLM can use it as
+        // raw input but shouldn't treat it as definitive insight.
+        const themesBuilt = buildPositioningThemes(rows, fields);
+        const themesSummary = {
+          totalQueriesWithAnalysis: themesBuilt.totalQueries,
+          topPhrases: themesBuilt.phrases.slice(0, 8).map((p) => ({
+            phrase: p.phrase,
+            count: p.count,
+          })),
+          topSignals: themesBuilt.signals.slice(0, 10).map((s) => ({
+            keyword: s.keyword,
+            count: s.count,
+          })),
+        };
+
         // Top competitors / brands mentioned (from insights).
         // brandFreq values are now { displayName, count } objects, keyed by
         // normalized brand-key so variants like "Stella" and "Stella Health
@@ -2178,6 +2937,23 @@
             rows: p.rowCount,
           })),
           perQuery: perQuery,
+          queryOwnership: {
+            counts: ownerSummary,
+            // Concrete examples so the LLM can name specific queries in
+            // its narrative rather than producing generic statements.
+            examples: {
+              youOwn: youOwnExamples,
+              open: openExamples,
+              dominated: dominatedExamples,
+            },
+            topDominators: topDominators,
+          },
+          zeroVisibility: {
+            count: zeroVisBuilt.length,
+            examples: zeroVisExamples,
+          },
+          rankDistribution: rankSummary,
+          positioningThemes: themesSummary,
           topCitedDomains: topDomains,
           topMentionedBrands: topBrands,
         };
@@ -2637,6 +3413,517 @@
           .slice(0, limit);
       }
 
+      // ============================================================
+      // Query Owners: per-query winner analysis
+      // ============================================================
+      // For each query, look at which brand is named in slot #1 (Mention 1)
+      // on each platform. Aggregate to one of four outcomes:
+      //
+      //   - YOU_OWN     — the target brand is #1 on a majority of platforms
+      //   - DOMINATED   — one competitor is #1 on a majority of platforms
+      //   - CONTESTED   — multiple brands tie for #1 across platforms (no
+      //                   single brand wins more than one platform)
+      //   - OPEN        — no brand is named #1 on any platform (truly open
+      //                   greenfield — rare but valuable to surface)
+      //
+      // Returns one entry per query with the outcome, the winning brand
+      // (when there is one), and per-platform slot-1 brand for the detail view.
+      //
+      // "Majority" with 3 platforms means 2-of-3 or 3-of-3 (>= ceil(n/2)+0,
+      // i.e. strictly more than half rounded down). For 2 platforms it
+      // requires both — a 1-1 split is contested.
+      //
+      // Why slot-1 and not aggregate rank: slot-1 is the strongest signal
+      // an AI gives — "here is THE answer." A brand that consistently
+      // ranks 2nd is meaningfully different from one that consistently
+      // ranks 1st. We could extend later to weighted scoring across slots,
+      // but slot-1-most-often is what most clients actually want to see.
+      function buildQueryOwners(groups, fields, targetBrand) {
+        const targetKey = brandKey(targetBrand || "");
+        return groups.map((g) => {
+          // Per-platform slot-1 brand
+          const platformWinners = {}; // platform -> { displayName, key }
+          Object.entries(g.byPlatform).forEach(([platform, row]) => {
+            const mentions = extractMentions(row, fields.mentions);
+            if (mentions.length === 0) return; // no slot-1 winner on this platform
+            const slot1 = String(mentions[0]).trim();
+            if (!slot1) return;
+            platformWinners[platform] = {
+              displayName: slot1,
+              key: brandKey(slot1),
+            };
+          });
+
+          const platformCount = Object.keys(platformWinners).length;
+          const platformsScanned = Object.keys(g.byPlatform).length;
+
+          // No platform had a slot-1 winner → truly open
+          if (platformCount === 0) {
+            return {
+              query: g.query,
+              outcome: "OPEN",
+              winner: null,
+              winnerCount: 0,
+              platformsScanned,
+              platformWinners,
+            };
+          }
+
+          // Count brand-key occurrences across platforms
+          const tally = {};
+          Object.values(platformWinners).forEach((w) => {
+            if (!tally[w.key])
+              tally[w.key] = { displayName: w.displayName, count: 0 };
+            tally[w.key].count += 1;
+          });
+
+          // Sort tally by count desc
+          const sorted = Object.entries(tally).sort(
+            (a, b) => b[1].count - a[1].count,
+          );
+          const [topKey, top] = sorted[0];
+          const second = sorted[1];
+
+          // Majority rule — strictly more than half the platforms that
+          // had a slot-1 winner. With 3 platforms scanned, 2+ wins. With
+          // 2 platforms, both required. With 1, that one counts.
+          const majorityThreshold = Math.floor(platformCount / 2) + 1;
+          const hasMajority = top.count >= majorityThreshold;
+          // Also require they actually beat the runner-up (avoids the
+          // 1-1-1 case where someone has a plurality of 1 but no majority)
+          const beatsRunnerUp = !second || top.count > second[1].count;
+
+          let outcome;
+          if (hasMajority && beatsRunnerUp) {
+            outcome = topKey === targetKey ? "YOU_OWN" : "DOMINATED";
+          } else {
+            outcome = "CONTESTED";
+          }
+
+          return {
+            query: g.query,
+            outcome,
+            winner:
+              outcome === "CONTESTED" || outcome === "OPEN"
+                ? null
+                : top.displayName,
+            winnerKey:
+              outcome === "CONTESTED" || outcome === "OPEN" ? null : topKey,
+            winnerCount: top.count,
+            platformsScanned,
+            platformsWithWinner: platformCount,
+            platformWinners,
+          };
+        });
+      }
+
+      // ============================================================
+      // Zero-Visibility Queries: where the brand is completely invisible
+      // ============================================================
+      // A query is "zero visibility" when the target brand was NOT
+      // mentioned in ANY platform's response for that query. These are
+      // the hardest misses — not just low score, completely absent from
+      // the AI's answer set.
+      //
+      // For each such query we surface:
+      //   - the per-platform scores (so the user sees if the queries
+      //     were even scored, or if the field is missing entirely)
+      //   - who DID own the query (helps frame the gap competitively)
+      //   - the top 3 domains cited for this query (potential outreach
+      //     targets — get coverage on these sites to enter the answer set)
+      //
+      // Returns the zero-vis queries sorted by "how many platforms had
+      // ANY content for this query" descending — so queries that
+      // actually got AI responses (just without the brand) rank above
+      // queries where the AI didn't engage at all.
+      function buildZeroVisQueries(groups, fields, targetBrand, queryOwners) {
+        const brandRe = brandMatcher((targetBrand || "").toLowerCase());
+        const ownersByQuery = {};
+        queryOwners.forEach((o) => {
+          ownersByQuery[o.query.toLowerCase()] = o;
+        });
+
+        const zeroVis = [];
+        groups.forEach((g) => {
+          // Check every platform for the brand. If any mentions it, skip.
+          let anyMention = false;
+          const platformScores = {};
+          Object.entries(g.byPlatform).forEach(([platform, row]) => {
+            if (rowMentionsBrand(row, fields, brandRe)) anyMention = true;
+            platformScores[platform] = parseScore(fieldVal(row, fields.score));
+          });
+          if (anyMention) return;
+
+          // Gather top cited domains for this query, filtered for infra.
+          const domainCounts = {};
+          Object.values(g.byPlatform).forEach((row) => {
+            const seen = new Set();
+            [
+              ...extractUrls(row[fields.urls]),
+              ...extractUrls(row[fields.sources]),
+            ].forEach((u) => {
+              const d = extractDomain(u.url);
+              if (!d || seen.has(d) || isInfrastructureDomain(d)) return;
+              seen.add(d);
+              domainCounts[d] = (domainCounts[d] || 0) + 1;
+            });
+          });
+          const topDomains = Object.entries(domainCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([d]) => d);
+
+          zeroVis.push({
+            query: g.query,
+            platformScores,
+            platformsScanned: Object.keys(g.byPlatform).length,
+            owner: ownersByQuery[g.query.toLowerCase()] || null,
+            topDomains,
+          });
+        });
+
+        // Sort: queries where ALL platforms had a response (so they're
+        // genuinely "your brand was excluded") rank higher than ones with
+        // partial coverage. Secondary sort: alphabetical for stability.
+        return zeroVis.sort((a, b) => {
+          if (b.platformsScanned !== a.platformsScanned) {
+            return b.platformsScanned - a.platformsScanned;
+          }
+          return a.query.localeCompare(b.query);
+        });
+      }
+
+      // ============================================================
+      // Rank Distribution: when the brand IS mentioned, where does it sit?
+      // ============================================================
+      // For every row where the target brand appears in the Mention 1..N
+      // list, find its slot (1-indexed). Bucket into:
+      //
+      //   Top       — slot 1               (AI's "headline" answer)
+      //   Prominent — slots 2-3            (still in the spotlight)
+      //   Mid       — slots 4-6            (named but not featured)
+      //   Deep      — slots 7+             (buried in a long list)
+      //
+      // We use the Mention slot directly rather than the `Brand Positions`
+      // field because:
+      //   (a) `Mention 1..N` is always populated when the brand appears,
+      //       while `Brand Positions` is only filled when score > 0
+      //   (b) we control the matching here (brandKey-aware), so spacing
+      //       variants like "Groove Life" / "Groovelife" both count
+      //
+      // Returns:
+      //   { total, byBucket: {Top: n, Prominent: n, Mid: n, Deep: n},
+      //     byPlatform: {platform: {bucket: count}},
+      //     examplesByBucket: {bucket: [{query, platform, slot, mentioned}]},
+      //     avgSlot: number | null,
+      //     medianSlot: number | null }
+      function buildRankDistribution(rows, fields, targetBrand) {
+        const targetKey = brandKey(targetBrand || "");
+        if (!targetKey) {
+          return {
+            total: 0,
+            byBucket: {},
+            byPlatform: {},
+            examplesByBucket: {},
+            avgSlot: null,
+            medianSlot: null,
+          };
+        }
+
+        const buckets = { Top: 0, Prominent: 0, Mid: 0, Deep: 0 };
+        const byPlatform = {};
+        const examplesByBucket = { Top: [], Prominent: [], Mid: [], Deep: [] };
+        const allSlots = [];
+
+        rows.forEach((row) => {
+          const mentions = extractMentions(row, fields.mentions);
+          // Find the FIRST slot where our brand appears. (If the AI listed
+          // the brand twice — rare but possible — we count the first slot
+          // as the rank, which is the more prominent one.)
+          let slot = -1;
+          for (let i = 0; i < mentions.length; i++) {
+            if (brandKey(String(mentions[i]).trim()) === targetKey) {
+              slot = i + 1;
+              break;
+            }
+          }
+          if (slot < 1) return; // brand not in mention list
+
+          allSlots.push(slot);
+          const bucket =
+            slot === 1
+              ? "Top"
+              : slot <= 3
+                ? "Prominent"
+                : slot <= 6
+                  ? "Mid"
+                  : "Deep";
+          buckets[bucket]++;
+
+          const platform =
+            normalizePlatform(fieldVal(row, fields.platform)) || "unknown";
+          if (!byPlatform[platform]) {
+            byPlatform[platform] = { Top: 0, Prominent: 0, Mid: 0, Deep: 0 };
+          }
+          byPlatform[platform][bucket]++;
+
+          // Keep a few examples per bucket for the user to drill into.
+          // We'll show up to 3 per bucket — first ones we encounter.
+          if (examplesByBucket[bucket].length < 3) {
+            const mentionedDisplay = mentions[slot - 1];
+            examplesByBucket[bucket].push({
+              query: fieldVal(row, fields.query) || "—",
+              platform,
+              slot,
+              mentioned: mentionedDisplay,
+              totalSlots: mentions.length,
+            });
+          }
+        });
+
+        // Average and median slot — useful "single number" summaries.
+        let avgSlot = null,
+          medianSlot = null;
+        if (allSlots.length > 0) {
+          avgSlot =
+            Math.round(
+              (allSlots.reduce((s, x) => s + x, 0) / allSlots.length) * 10,
+            ) / 10;
+          const sorted = [...allSlots].sort((a, b) => a - b);
+          const mid = Math.floor(sorted.length / 2);
+          medianSlot =
+            sorted.length % 2 === 0
+              ? (sorted[mid - 1] + sorted[mid]) / 2
+              : sorted[mid];
+        }
+
+        return {
+          total: allSlots.length,
+          byBucket: buckets,
+          byPlatform,
+          examplesByBucket,
+          avgSlot,
+          medianSlot,
+        };
+      }
+
+      // ============================================================
+      // Positioning Themes: deterministic phrase-frequency analysis
+      // ============================================================
+      // Mines the Competitors Analysis text across all rows to find:
+      //
+      //   1. RECURRING PHRASES — 2-3 word n-grams that appear in multiple
+      //      query analyses. Filtered against a stopword list and against
+      //      generic-AI-speak boilerplate. Each phrase shows its frequency
+      //      and the queries where it appeared.
+      //
+      //   2. POSITIONING SIGNALS — a curated list of business/marketing
+      //      keywords (e.g., "premium", "affordable", "subscription",
+      //      "warranty", "sustainable") with hit counts. Useful as a quick
+      //      lens on what positioning angles the AI uses to describe the
+      //      space.
+      //
+      // IMPORTANT — this is intentionally shallow analysis. It surfaces
+      // patterns but doesn't interpret them. For deeper semantic insight,
+      // the Competitor Report has an LLM-powered Messaging Differentiators
+      // panel that produces real positioning narratives. The UI links to
+      // that report.
+      //
+      // Returns: { phrases: [{ngram, count, queries: [...]}], signals: {...} }
+      function buildPositioningThemes(rows, fields) {
+        // ---- Stopwords ----
+        // Common English words that produce noise as n-grams.
+        const STOPWORDS = new Set(
+          (
+            "a about above after again against all am an and any are as at be " +
+            "because been before being below between both but by could did do does " +
+            "doing down during each few for from further had has have having he her " +
+            "here hers him his how i if in into is it its itself just like make may " +
+            "me might more most much my myself no nor not now of off on once only or " +
+            "other our ours out over own same she should so some such than that the " +
+            "their theirs them themselves then there these they this those through " +
+            "to too under until up upon us very was we were what when where which " +
+            "while who whom why will with would you your yours yourself " +
+            // AI-speak boilerplate that adds no signal
+            "also however therefore additionally moreover furthermore notably " +
+            "particularly specifically generally typically often sometimes " +
+            "company brand product products market space " +
+            "compared comparison versus terms regarding"
+          )
+            .split(/\s+/)
+            .filter(Boolean),
+        );
+
+        // ---- Positioning signal keywords ----
+        // Curated list — these are descriptors the AI commonly uses to position
+        // brands in competitive analyses. The list is hand-curated so we can be
+        // honest about what's being matched (not a black-box LLM call).
+        const POSITIONING_KEYWORDS = [
+          "premium",
+          "luxury",
+          "high-end",
+          "expensive",
+          "affordable",
+          "budget",
+          "value",
+          "cheap",
+          "inexpensive",
+          "subscription",
+          "membership",
+          "recurring",
+          "warranty",
+          "guarantee",
+          "lifetime",
+          "replacement",
+          "sustainable",
+          "eco-friendly",
+          "organic",
+          "natural",
+          "innovative",
+          "cutting-edge",
+          "modern",
+          "traditional",
+          "specialized",
+          "niche",
+          "mainstream",
+          "broad",
+          "durable",
+          "long-lasting",
+          "high-quality",
+          "reliable",
+          "usa-made",
+          "made-in-usa",
+          "american-made",
+          "imported",
+          "minimalist",
+          "stylish",
+          "fashionable",
+          "design-focused",
+          "professional",
+          "medical-grade",
+          "fitness",
+          "athletic",
+          "beginner",
+          "advanced",
+          "expert",
+          "entry-level",
+          "limited",
+          "exclusive",
+          "wide-selection",
+          "variety",
+          "fast-shipping",
+          "free-shipping",
+          "free-trial",
+          "community",
+          "reviews",
+          "recommended",
+          "popular",
+          "leader",
+        ];
+
+        // ---- Gather text ----
+        // We use ONLY Competitors Analysis here. Raw Output is what the AI
+        // said in answering the user's actual question — different speech
+        // register, not useful for positioning. Mentions are just names.
+        const queryToText = {};
+        rows.forEach((row) => {
+          const q = String(fieldVal(row, fields.query) || "").trim();
+          if (!q) return;
+          const text = String(
+            fieldVal(row, fields.competitorAnalysis) || "",
+          ).trim();
+          if (!text) return;
+          if (!queryToText[q]) queryToText[q] = [];
+          queryToText[q].push(text);
+        });
+        const queries = Object.keys(queryToText);
+        if (queries.length === 0) {
+          return { phrases: [], signals: [], totalQueries: 0 };
+        }
+
+        // ---- N-gram extraction (bigrams + trigrams) ----
+        // For each query, build the set of distinct n-grams. We dedupe per
+        // query so a phrase repeated 5 times in one analysis still only
+        // counts as 1 query-occurrence — what we care about is whether
+        // the phrase shows up ACROSS queries, not how often within one.
+        const phraseQueries = {}; // phrase -> Set of queries
+
+        queries.forEach((q) => {
+          const text = queryToText[q].join(" ");
+          // Tokenize: lowercase letters and numbers only, strip everything else.
+          const tokens = text
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, " ")
+            .split(/\s+/)
+            .filter((t) => t.length >= 2);
+          const seenInQuery = new Set();
+          // Bigrams and trigrams
+          for (let n = 2; n <= 3; n++) {
+            for (let i = 0; i + n <= tokens.length; i++) {
+              const slice = tokens.slice(i, i + n);
+              // Skip if ANY token is a stopword or pure number
+              if (slice.some((t) => STOPWORDS.has(t) || /^\d+$/.test(t)))
+                continue;
+              // Skip very short tokens at the boundaries — usually noise
+              if (slice[0].length < 3 || slice[slice.length - 1].length < 3)
+                continue;
+              const phrase = slice.join(" ");
+              if (seenInQuery.has(phrase)) continue;
+              seenInQuery.add(phrase);
+              if (!phraseQueries[phrase]) phraseQueries[phrase] = new Set();
+              phraseQueries[phrase].add(q);
+            }
+          }
+        });
+
+        // Keep phrases appearing in 2+ queries. Sort by count desc, then by
+        // length desc (prefer trigrams when they tie — more specific).
+        const phrases = Object.entries(phraseQueries)
+          .filter(([, qs]) => qs.size >= 2)
+          .map(([phrase, qs]) => ({
+            phrase,
+            count: qs.size,
+            queries: Array.from(qs),
+          }))
+          .sort((a, b) => {
+            if (b.count !== a.count) return b.count - a.count;
+            return b.phrase.length - a.phrase.length;
+          })
+          .slice(0, 12);
+
+        // ---- Positioning signal extraction ----
+        // For each curated keyword, count how many distinct queries had an
+        // analysis mentioning it. We match the keyword as a whole word
+        // (with optional hyphen handling) so "premium" doesn't match
+        // "premiums" or "premium-cut".
+        const signals = [];
+        POSITIONING_KEYWORDS.forEach((kw) => {
+          // Match either "premium" or "high-end" — hyphenated keywords need
+          // their literal hyphen, plain ones get \b boundaries.
+          const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const re = new RegExp("\\b" + escaped + "\\b", "i");
+          const matchedQueries = [];
+          queries.forEach((q) => {
+            const text = queryToText[q].join(" ");
+            if (re.test(text)) matchedQueries.push(q);
+          });
+          if (matchedQueries.length > 0) {
+            signals.push({
+              keyword: kw,
+              count: matchedQueries.length,
+              queries: matchedQueries,
+            });
+          }
+        });
+        signals.sort((a, b) => b.count - a.count);
+
+        return {
+          phrases,
+          signals: signals.slice(0, 15),
+          totalQueries: queries.length,
+        };
+      }
+
       function extractDomain(url) {
         if (!url) return "";
         try {
@@ -2740,7 +4027,7 @@
         }
 
         state.allRows = rows;
-        state.fields = resolveFields(rows[0]);
+        state.fields = resolveFields(rows);
         state.platformFilter = "all";
         state.expandedAll = false;
 
@@ -3055,6 +4342,274 @@
               <div class="legend-item"><span class="swatch low"></span> Low (1–39%)</div>
               <div class="legend-item"><span class="swatch zero"></span> No visibility</div>
             </div>
+          </div>
+        </div>`;
+        }
+
+        // ---------- Query Owners panel ----------
+        // Per-query "who wins slot #1" analysis. Surfaces dominated queries
+        // (where you'd need to displace a strong incumbent), contested queries
+        // (where the AI's answers are still in flux), and open/greenfield
+        // queries (where literally nobody is winning yet — those are the
+        // easiest places to plant a flag).
+        const targetBrandForOwners = rows[0]
+          ? String(fieldVal(rows[0], fields.brand)).trim()
+          : "";
+        const groupsForOwners = groupByQuery(rows, fields);
+        const queryOwners = buildQueryOwners(
+          groupsForOwners,
+          fields,
+          targetBrandForOwners,
+        );
+        if (queryOwners.length > 0) {
+          const counts = { YOU_OWN: 0, DOMINATED: 0, CONTESTED: 0, OPEN: 0 };
+          queryOwners.forEach((o) => counts[o.outcome]++);
+
+          // Sort: you-own first (celebrate the wins), then open (easy targets),
+          // then contested (worth pursuing), then dominated (hardest). Inside
+          // each bucket, alphabetical for stability.
+          const sortOrder = { YOU_OWN: 0, OPEN: 1, CONTESTED: 2, DOMINATED: 3 };
+          const sortedOwners = [...queryOwners].sort((a, b) => {
+            if (sortOrder[a.outcome] !== sortOrder[b.outcome]) {
+              return sortOrder[a.outcome] - sortOrder[b.outcome];
+            }
+            return a.query.localeCompare(b.query);
+          });
+
+          html += `
+        <div class="panel" id="queryOwnersPanel">
+          <div class="panel-label">Query Owners ${infoTip("For each query, who is named first by the AI engines? This shows whether you own the conversation, a competitor dominates, the field is split (contested), or nobody is winning yet (open / greenfield). The four counters at the top summarise outcomes across the whole scan; the rows below let you drill into individual queries and see who won on each platform.")}</div>
+          <div class="owners-summary">
+            <div class="os-cell you"><div class="os-count">${counts.YOU_OWN}</div><div class="os-label">You own</div></div>
+            <div class="os-cell open"><div class="os-count">${counts.OPEN}</div><div class="os-label">Open / greenfield</div></div>
+            <div class="os-cell contested"><div class="os-count">${counts.CONTESTED}</div><div class="os-label">Contested</div></div>
+            <div class="os-cell them"><div class="os-count">${counts.DOMINATED}</div><div class="os-label">Competitor wins</div></div>
+          </div>
+          <div class="owners-grid">
+            ${sortedOwners
+              .map((o) => {
+                const cls =
+                  o.outcome === "YOU_OWN"
+                    ? "you-own"
+                    : o.outcome === "DOMINATED"
+                      ? "dominated"
+                      : o.outcome === "CONTESTED"
+                        ? "contested"
+                        : "open";
+                const badge =
+                  o.outcome === "YOU_OWN"
+                    ? "You own"
+                    : o.outcome === "DOMINATED"
+                      ? "Competitor"
+                      : o.outcome === "CONTESTED"
+                        ? "Contested"
+                        : "Open";
+                const winnerBlock = o.winner
+                  ? `<div class="or-winner"><span class="label">${o.outcome === "YOU_OWN" ? "You lead" : "Winner"}</span><span class="name">${escapeHtml(o.winner)}</span> <span style="color:var(--ink-faint); font-size: 11px;">(${o.winnerCount}/${o.platformsWithWinner})</span></div>`
+                  : `<div class="or-winner"><span class="label">${o.outcome === "OPEN" ? "Status" : "Top brands"}</span><span class="name" style="color:var(--ink-mute); font-weight: 400;">${o.outcome === "OPEN" ? "No slot-1 winner on any platform" : "Split across platforms"}</span></div>`;
+                // Per-platform breakdown — shows which brand owned slot 1 on each AI engine.
+                const platformDetail =
+                  Object.keys(o.platformWinners).length > 0
+                    ? `<div class="or-platforms">
+                    ${Object.entries(o.platformWinners)
+                      .map(([p, w]) => {
+                        const opt = PLATFORM_OPTIONS.find((x) => x.key === p);
+                        const plLabel = opt ? opt.label : p.toUpperCase();
+                        const isYou = w.key === brandKey(targetBrandForOwners);
+                        return `<span class="pp ${isYou ? "is-you" : ""}"><span class="plat-name">${escapeHtml(plLabel)}</span><span class="winner-name">${escapeHtml(w.displayName)}</span></span>`;
+                      })
+                      .join("")}
+                  </div>`
+                    : "";
+                return `
+                <div class="owner-row ${cls}">
+                  <div class="or-q">${escapeHtml(o.query)}</div>
+                  ${winnerBlock}
+                  <div class="or-badge">${badge}</div>
+                  ${platformDetail}
+                </div>`;
+              })
+              .join("")}
+          </div>
+        </div>`;
+        }
+
+        // ---------- Zero-Visibility Queries panel ----------
+        // Hard misses — queries where the brand wasn't named on ANY platform.
+        // Distinct from low-score: a low score still means the brand was in
+        // the conversation, just not winning. Zero-visibility means the AI
+        // doesn't associate the brand with the topic at all.
+        const zeroVisQueries = buildZeroVisQueries(
+          groupsForOwners,
+          fields,
+          targetBrandForOwners,
+          queryOwners,
+        );
+        if (zeroVisQueries.length > 0) {
+          html += `
+        <div class="panel" id="zeroVisPanel">
+          <div class="panel-label">Zero-Visibility Queries · ${zeroVisQueries.length} ${infoTip("Queries where your brand was not named in ANY AI engine's response. These are the hardest misses — not just a low score, but completely absent from the conversation. For each, we surface who DID win the query (your competitive gap) and which domains the AI cited (potential outreach targets — getting coverage on those sites is the most direct path to entering the answer set).")}</div>
+          ${zeroVisQueries
+            .map((z) => {
+              const ownerBlock =
+                z.owner && z.owner.winner
+                  ? `<span class="winner-name">${escapeHtml(z.owner.winner)}</span> won on ${z.owner.winnerCount} of ${z.owner.platformsWithWinner} platform${z.owner.platformsWithWinner === 1 ? "" : "s"}`
+                  : z.owner && z.owner.outcome === "CONTESTED"
+                    ? "Split between competitors"
+                    : "No clear winner";
+              const ownerClass = z.owner && z.owner.winner ? "" : "muted";
+              const domainBlock =
+                z.topDomains.length > 0
+                  ? `<div class="zv-domains">${z.topDomains.map((d) => `<span class="zv-dom">${escapeHtml(d)}</span>`).join("")}</div>`
+                  : `<div class="zv-meta-value muted">No domains cited</div>`;
+              return `
+              <div class="zerovis-row">
+                <div class="zv-top">
+                  <div class="zv-q">${escapeHtml(z.query)}</div>
+                  <div class="zv-state">No mention</div>
+                </div>
+                <div class="zv-meta">
+                  <div class="zv-meta-block">
+                    <div class="zv-meta-label">Who did the AI name first?</div>
+                    <div class="zv-meta-value ${ownerClass}">${ownerBlock}</div>
+                  </div>
+                  <div class="zv-meta-block">
+                    <div class="zv-meta-label">Top cited domains (outreach targets)</div>
+                    ${domainBlock}
+                  </div>
+                </div>
+              </div>`;
+            })
+            .join("")}
+        </div>`;
+        }
+
+        // ---------- Rank Distribution panel ----------
+        // When the brand IS mentioned, where in the AI's list does it sit?
+        // We split into Top (slot 1), Prominent (2-3), Mid (4-6), Deep (7+).
+        // Slot 1 is the AI's "headline" answer; everything below that is
+        // less prominent. Each bucket appears in the stacked bar only if
+        // it has hits, so an empty bucket doesn't visually crowd the bar.
+        const rankDist = buildRankDistribution(
+          rows,
+          fields,
+          targetBrandForOwners,
+        );
+        if (rankDist.total > 0) {
+          const totalMentioned = rankDist.total;
+          const pct = (n) =>
+            totalMentioned > 0 ? Math.round((n / totalMentioned) * 100) : 0;
+          const segHtml = ["Top", "Prominent", "Mid", "Deep"]
+            .map((b) => {
+              const count = rankDist.byBucket[b] || 0;
+              if (count === 0) return "";
+              const p = pct(count);
+              return `<div class="rb-seg ${b.toLowerCase()}" style="flex: ${count} 0 0;" title="${b}: ${count} of ${totalMentioned} (${p}%)">${p >= 8 ? p + "%" : ""}</div>`;
+            })
+            .join("");
+
+          // Headline number: the % of mentions that landed in slot 1.
+          const topPct = pct(rankDist.byBucket.Top || 0);
+
+          html += `
+        <div class="panel" id="rankDistPanel">
+          <div class="panel-label">Rank Distribution ${infoTip("When your brand appears in an AI response, where does it sit in the list? Slot 1 (Top) is the AI\\u2019s headline answer. Slots 2\\u20133 (Prominent) still get user attention. Slots 4\\u20136 (Mid) are mentioned but rarely featured. Slots 7+ (Deep) are buried. This panel shows the breakdown across the full scan and per platform, plus example rows for each bucket so you can drill in.")}</div>
+          <div class="rank-headline">
+            <div>
+              <div class="rh-label">Top-slot rate</div>
+              <div class="rh-num ${topPct >= 50 ? "" : "muted"}">${topPct}<span style="font-size: 22px;">%</span></div>
+            </div>
+            <div>
+              <div class="rh-label">Across ${totalMentioned} mention${totalMentioned === 1 ? "" : "s"}</div>
+              <div class="rh-detail">
+                Average slot <em>#${rankDist.avgSlot ?? "—"}</em> · Median slot <em>#${rankDist.medianSlot ?? "—"}</em>.
+                ${
+                  topPct >= 70
+                    ? "Strong top-of-list presence — the AI consistently treats your brand as the headline answer."
+                    : topPct >= 40
+                      ? "Solid top-tier presence with room to claim more #1 slots."
+                      : topPct > 0
+                        ? "When mentioned, you\u2019re usually below the headline. Focus on becoming the AI\u2019s first-recommended brand."
+                        : "You\u2019re mentioned but never at slot #1. The conversation is happening — you\u2019re just not the lead."
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="rank-bar">${segHtml}</div>
+          <div class="rank-bar-legend">
+            <span class="rbl-item"><span class="swatch top"></span>Top (slot 1)</span>
+            <span class="rbl-item"><span class="swatch prominent"></span>Prominent (2–3)</span>
+            <span class="rbl-item"><span class="swatch mid"></span>Mid (4–6)</span>
+            <span class="rbl-item"><span class="swatch deep"></span>Deep (7+)</span>
+          </div>
+
+          ${
+            Object.keys(rankDist.byPlatform).length > 1
+              ? `
+            <div class="rank-platforms">
+              ${Object.entries(rankDist.byPlatform)
+                .map(([plat, b]) => {
+                  const opt = PLATFORM_OPTIONS.find((x) => x.key === plat);
+                  const platLabel = opt ? opt.label : plat.toUpperCase();
+                  const platTotal =
+                    (b.Top || 0) +
+                    (b.Prominent || 0) +
+                    (b.Mid || 0) +
+                    (b.Deep || 0);
+                  const platTop = b.Top || 0;
+                  const platTopPct =
+                    platTotal > 0 ? Math.round((platTop / platTotal) * 100) : 0;
+                  return `
+                  <div class="rp-block">
+                    <div class="rp-name">${escapeHtml(platLabel)}</div>
+                    <div class="rp-bar">
+                      ${["Top", "Prominent", "Mid", "Deep"]
+                        .map((buck) => {
+                          const c = b[buck] || 0;
+                          if (c === 0) return "";
+                          return `<div class="rb-seg ${buck.toLowerCase()}" style="flex: ${c} 0 0;"></div>`;
+                        })
+                        .join("")}
+                    </div>
+                    <div class="rp-stats">
+                      <span>Top: <span class="reg-slot" style="color: var(--ok);">${platTopPct}%</span></span>
+                      <span>${platTotal} mention${platTotal === 1 ? "" : "s"}</span>
+                    </div>
+                  </div>`;
+                })
+                .join("")}
+            </div>
+          `
+              : ""
+          }
+
+          <div class="rank-examples">
+            ${["Top", "Prominent", "Mid", "Deep"]
+              .map((b) => {
+                const ex = rankDist.examplesByBucket[b] || [];
+                if (ex.length === 0) return "";
+                return `
+                <div class="rank-example-group">
+                  <div class="reg-head">${b} — examples</div>
+                  ${ex
+                    .map((e) => {
+                      const opt = PLATFORM_OPTIONS.find(
+                        (x) => x.key === e.platform,
+                      );
+                      const platLabel = opt
+                        ? opt.label
+                        : (e.platform || "").toUpperCase();
+                      return `
+                      <div class="reg-ex">
+                        <div class="reg-q">${escapeHtml(e.query)}</div>
+                        <div class="reg-meta">${escapeHtml(platLabel)} · <span class="reg-slot">Slot #${e.slot}</span> of ${e.totalSlots}</div>
+                      </div>`;
+                    })
+                    .join("")}
+                </div>`;
+              })
+              .join("")}
           </div>
         </div>`;
         }
