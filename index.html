@@ -222,6 +222,41 @@
         border: 1px dashed var(--line-strong);
         border-radius: var(--radius-sm);
       }
+
+      /* ---------- Trend zone — separate from the workflow actions ----------
+     Shows after the 2x2 grid as a distinct entry point. It's a different
+     mode (works on past scan CSVs, not the current scan) so it gets a
+     visual break and its own label. */
+      .trend-zone {
+        margin-top: 28px;
+        position: relative;
+      }
+      .trend-zone .trend-label {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--ink-faint);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        padding-left: 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .trend-zone .trend-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, var(--line-strong), transparent);
+      }
+      .action-card.trend-card {
+        background: linear-gradient(
+          135deg,
+          var(--bg-1) 0%,
+          var(--bg-2) 60%,
+          rgba(232, 184, 106, 0.04) 100%
+        );
+      }
       .secondary-actions .label {
         font-family: var(--mono);
         font-size: 11px;
@@ -471,6 +506,41 @@
           <span class="label">Or</span>
           <a href="#" id="newScanLink">Run another scan</a>
         </div>
+      </section>
+
+      <!-- Trend Report — separate mode, doesn't depend on the current scan.
+       Placed OUTSIDE next-zone so it's always visible, including on first
+       visit before any scan has been run. Users with past CSV exports can
+       go straight to comparison without having to run a fresh scan. -->
+      <section class="trend-zone">
+        <div class="trend-label">Or — comparison mode</div>
+        <button
+          class="action-card trend-card"
+          data-target="trend-report.html"
+          type="button"
+        >
+          <span class="num">05</span>
+          <div class="icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 17 9 11 13 15 21 7" />
+              <polyline points="14 7 21 7 21 14" />
+            </svg>
+          </div>
+          <div class="label">Visibility Trend Over Time</div>
+          <div class="desc">
+            Upload two or more past scan CSVs to see how visibility has changed.
+            Doesn't require a fresh scan — works on whatever scan exports you
+            have.
+          </div>
+          <div class="cta">Open Trend Report <span class="arrow">→</span></div>
+        </button>
       </section>
     </div>
 
