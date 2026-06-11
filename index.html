@@ -52,10 +52,12 @@
       /* ---------- "What's next?" zone ---------- */
       .next-zone {
         margin-top: 40px;
-        display: none;
       }
-      .next-zone.show {
-        display: block;
+      /* Animation fires once on scan success (via JS adding .flash) to draw
+     the eye to "here's what to do with your scan." The zone itself is
+     always visible — even on first visit, users can click into any
+     report and upload a CSV there directly. */
+      .next-zone.flash {
         animation: rise 0.5s ease-out;
       }
       @keyframes rise {
@@ -371,11 +373,16 @@
         <div id="status" class="status"></div>
       </section>
 
-      <!-- "What's next?" zone — appears on success -->
+      <!-- Reports zone — always visible. After a successful scan, a "rise"
+       animation fires (via .flash class) and the page scrolls here.
+       Cards can be opened directly even without a scan; each report
+       has its own CSV upload zone for that case. -->
       <section class="next-zone" id="nextZone">
         <div class="next-header">
-          <div class="title">What's <em>next</em>?</div>
-          <div class="meta">02 — Choose a workflow</div>
+          <div class="title"><em>Reports</em></div>
+          <div class="meta">
+            Each report uses your latest scan or accepts a fresh CSV upload
+          </div>
         </div>
 
         <div class="actions-stack">
@@ -502,7 +509,14 @@
           </div>
         </div>
 
-        <div class="secondary-actions">
+        <!-- "Run another scan" is only meaningful when there's a prior scan
+         to reset. JS shows this on page load if ToolState has a scan,
+         and toggles it whenever scan state changes. -->
+        <div
+          class="secondary-actions"
+          id="secondaryActions"
+          style="display: none"
+        >
           <span class="label">Or</span>
           <a href="#" id="newScanLink">Run another scan</a>
         </div>
@@ -560,13 +574,23 @@
         status: document.getElementById("status"),
         nextZone: document.getElementById("nextZone"),
         newScanLink: document.getElementById("newScanLink"),
+        secondaryActions: document.getElementById("secondaryActions"),
       };
 
       // Default values for quick testing
       window.addEventListener("load", () => {
         els.brand.value = "My Brand";
         els.queries.value = "best running shoes, top rated sneakers";
+        // "Run another scan" is only meaningful when there's a prior scan
+        // to reset. Check ToolState on load and update visibility.
+        refreshSecondaryActions();
       });
+
+      function refreshSecondaryActions() {
+        const ctx = ToolState.getScanContext();
+        const hasScan = !!(ctx && ctx.rows && ctx.rows.length > 0);
+        els.secondaryActions.style.display = hasScan ? "flex" : "none";
+      }
 
       // ---------- Helpers ----------
       function showStatus(type, html) {
@@ -579,7 +603,12 @@
       }
 
       function showNextZone() {
-        els.nextZone.classList.add("show");
+        // Zone is always visible; .flash fires the "rise" animation once
+        // to draw attention after a successful scan. Reflow trick restarts
+        // the animation if the class was already present.
+        els.nextZone.classList.remove("flash");
+        void els.nextZone.offsetWidth;
+        els.nextZone.classList.add("flash");
         setTimeout(
           () =>
             els.nextZone.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -588,7 +617,8 @@
       }
 
       function hideNextZone() {
-        els.nextZone.classList.remove("show");
+        // Zone stays visible; just clear the flash animation state.
+        els.nextZone.classList.remove("flash");
       }
 
       // ---------- Action card navigation ----------
@@ -605,6 +635,7 @@
         ToolState.clear();
         hideNextZone();
         clearStatus();
+        refreshSecondaryActions();
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
 
@@ -670,6 +701,7 @@
               `<strong>Scan complete.</strong> Collected ${rows.length} data points across ${queries.length} ${queries.length === 1 ? "query" : "queries"}. Choose how you'd like to explore the report below.`,
             );
             showNextZone();
+            refreshSecondaryActions();
           } else {
             showStatus(
               "info",
