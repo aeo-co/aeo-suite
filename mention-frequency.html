@@ -1,0 +1,2986 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mention Frequency — AEO Suite</title>
+
+    <link rel="stylesheet" href="shared/tokens.css" />
+
+    <style>
+      /* ============================================================
+     Mention Frequency — v1
+     ============================================================
+     Counts how many times the tracked brand + its competitors are
+     mentioned across all URLs (citations + sources) surfaced in a
+     scan. Headline view is share-of-voice. Drives outreach and
+     content decisions via the "Gap pages" section.
+     ============================================================ */
+
+      .source-section {
+        margin-bottom: 32px;
+      }
+
+      /* ---------- Pre-analysis card ---------- */
+      .pre-analysis {
+        background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+        border: 1px solid var(--accent-line);
+        border-radius: var(--radius);
+        padding: 32px 28px;
+        margin-bottom: 24px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .pre-analysis::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--accent),
+          transparent
+        );
+      }
+      .pre-analysis .pa-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-faint);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .pre-analysis .pa-count {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: clamp(36px, 5vw, 52px);
+        line-height: 1.1;
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
+      .pre-analysis .pa-count em {
+        color: var(--accent);
+        font-style: italic;
+      }
+      .pre-analysis .pa-sub {
+        font-size: 14px;
+        color: var(--ink-mute);
+        line-height: 1.6;
+        margin-bottom: 22px;
+      }
+      .pre-analysis .pa-meta {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-faint);
+        letter-spacing: 0.08em;
+        margin-bottom: 22px;
+      }
+      .pre-analysis .pa-meta strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .pre-analysis .pa-warning {
+        padding: 12px 16px;
+        background: rgba(232, 184, 106, 0.08);
+        border: 1px solid rgba(232, 184, 106, 0.32);
+        border-radius: var(--radius-sm);
+        color: var(--ink);
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 22px;
+        text-align: left;
+      }
+      .pre-analysis .pa-warning strong {
+        color: var(--accent);
+      }
+      .pre-analysis .pa-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 28px;
+        background: var(--accent);
+        color: var(--bg-0);
+        border: none;
+        border-radius: 999px;
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
+      }
+      .pre-analysis .pa-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(232, 184, 106, 0.3);
+      }
+      .pre-analysis .pa-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ---------- Loading state ---------- */
+      .loading-state {
+        padding: 48px 32px;
+        text-align: center;
+        background: var(--bg-1);
+        border: 1px solid var(--accent-line);
+        border-radius: var(--radius);
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      .loading-state::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--accent),
+          transparent
+        );
+        animation: ls-shimmer 2s linear infinite;
+      }
+      @keyframes ls-shimmer {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+      .loading-state .ls-spinner {
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--line-strong);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: ls-spin 0.9s linear infinite;
+        margin-bottom: 18px;
+      }
+      @keyframes ls-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .loading-state .ls-title {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 22px;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .loading-state .ls-elapsed {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        margin-bottom: 6px;
+      }
+      .loading-state .ls-estimate {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-faint);
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+      .loading-state .ls-recovery {
+        margin-top: 18px;
+        padding: 12px 16px;
+        background: rgba(217, 122, 111, 0.06);
+        border: 1px dashed rgba(217, 122, 111, 0.4);
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        color: var(--ink-mute);
+        line-height: 1.5;
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: left;
+      }
+      .loading-state .ls-recovery strong {
+        color: var(--bad);
+      }
+
+      /* ---------- Panel primitive ---------- */
+      .panel {
+        background: var(--bg-1);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 28px;
+        margin-bottom: 20px;
+      }
+      .panel-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-faint);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .panel-label::before {
+        content: "//";
+        color: var(--accent);
+      }
+      .panel-label.with-action {
+        justify-content: space-between;
+      }
+      .panel-label.with-action > span:first-of-type {
+        flex: 1;
+      }
+
+      .btn-export-csv {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: var(--bg-2);
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        color: var(--ink-mute);
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-export-csv:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* ---------- Status pill (e.g., "81 of 87 analyzed") ---------- */
+      .status-pill-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-mute);
+        letter-spacing: 0.06em;
+      }
+      .status-pill-row .sp {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      .status-pill-row .sp.ok strong {
+        color: var(--ok);
+      }
+      .status-pill-row .sp.bad strong {
+        color: var(--bad);
+      }
+      .status-pill-row .sp strong {
+        font-weight: 500;
+      }
+
+      /* ---------- Headline ---------- */
+      .mf-headline {
+        text-align: center;
+        padding: 36px 24px 32px;
+        background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .mf-headline::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--accent),
+          transparent
+        );
+      }
+      .mf-headline .label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-faint);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .mf-headline .big {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: clamp(40px, 6vw, 64px);
+        line-height: 1;
+        color: var(--accent);
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+      }
+      .mf-headline .sub {
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.55;
+        max-width: 600px;
+        margin: 0 auto 18px;
+      }
+      .mf-headline .sub strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .mf-headline .footnote {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-faint);
+        letter-spacing: 0.06em;
+        margin-top: 10px;
+      }
+
+      /* ---------- Stacked bar (share of voice) ---------- */
+      .sov-bar {
+        display: flex;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: var(--bg-0);
+        margin-bottom: 6px;
+      }
+      .sov-bar .sov-seg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--bg-0);
+        transition: opacity 0.15s;
+        cursor: default;
+      }
+      .sov-bar .sov-seg:hover {
+        opacity: 0.85;
+      }
+      .sov-bar .sov-seg.you {
+        background: var(--accent);
+      }
+      .sov-bar .sov-seg.c1 {
+        background: #8aa9c8;
+      }
+      .sov-bar .sov-seg.c2 {
+        background: #c8a878;
+        color: var(--bg-0);
+      }
+      .sov-bar .sov-seg.c3 {
+        background: #b39de0;
+      }
+      .sov-bar .sov-seg.c4 {
+        background: #9ec98c;
+        color: var(--bg-0);
+      }
+      .sov-bar .sov-seg.c5 {
+        background: #d2a487;
+        color: var(--bg-0);
+      }
+      .sov-bar .sov-seg.other {
+        background: rgba(255, 255, 255, 0.18);
+        color: var(--ink);
+      }
+      .sov-bar .sov-seg:empty {
+        display: none;
+      }
+
+      .sov-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--ink-mute);
+        letter-spacing: 0.04em;
+        margin-top: 10px;
+      }
+      .sov-legend .lg {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sov-legend .sw {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+      }
+      .sov-legend .sw.you {
+        background: var(--accent);
+      }
+      .sov-legend .sw.c1 {
+        background: #8aa9c8;
+      }
+      .sov-legend .sw.c2 {
+        background: #c8a878;
+      }
+      .sov-legend .sw.c3 {
+        background: #b39de0;
+      }
+      .sov-legend .sw.c4 {
+        background: #9ec98c;
+      }
+      .sov-legend .sw.c5 {
+        background: #d2a487;
+      }
+      .sov-legend .sw.other {
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .sov-legend strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+
+      /* ---------- Leaderboard ---------- */
+      .lb-table {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .lb-row {
+        display: grid;
+        grid-template-columns: 30px minmax(160px, 1.5fr) 1fr 90px 90px 100px;
+        gap: 14px;
+        align-items: center;
+        padding: 12px 14px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+      }
+      .lb-row.you {
+        background: linear-gradient(
+          135deg,
+          rgba(232, 184, 106, 0.08) 0%,
+          transparent 100%
+        );
+        border-color: var(--accent-line);
+        border-left: 3px solid var(--accent);
+      }
+      .lb-rank {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--ink-faint);
+        text-align: center;
+      }
+      .lb-row.you .lb-rank {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .lb-name {
+        font-family: var(--serif);
+        font-size: 17px;
+        color: var(--ink);
+        line-height: 1.2;
+        word-break: break-word;
+      }
+      .lb-name .you-tag {
+        margin-left: 8px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        background: var(--accent-glow);
+        border: 1px solid var(--accent-line);
+        padding: 2px 7px;
+        border-radius: 999px;
+        vertical-align: middle;
+      }
+      .lb-bar-wrap {
+        min-width: 0;
+      }
+      .lb-bar {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .lb-bar > div {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent-lo), var(--accent));
+        border-radius: 4px;
+        transition: width 0.5s ease;
+      }
+      .lb-row.you .lb-bar > div {
+        background: linear-gradient(90deg, var(--accent), #ffd700);
+      }
+      .lb-bar-meta {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--ink-faint);
+        letter-spacing: 0.04em;
+        margin-top: 4px;
+      }
+      .lb-num {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--ink);
+        text-align: right;
+      }
+      .lb-num.dim {
+        color: var(--ink-faint);
+      }
+      .lb-num strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .lb-share {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 20px;
+        color: var(--ink);
+        text-align: right;
+      }
+      .lb-row.you .lb-share {
+        color: var(--accent);
+      }
+
+      /* Ambiguous brand warning */
+      .ambig-warning {
+        margin-top: 14px;
+        padding: 12px 16px;
+        background: rgba(232, 184, 106, 0.06);
+        border: 1px solid rgba(232, 184, 106, 0.3);
+        border-radius: var(--radius-sm);
+        font-size: 12.5px;
+        color: var(--ink);
+        line-height: 1.55;
+      }
+      .ambig-warning strong {
+        color: var(--accent);
+      }
+
+      /* ---------- Gap pages ---------- */
+      .gap-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .gap-row {
+        padding: 14px 16px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        border-left: 3px solid var(--bad);
+      }
+      .gap-row.no-mentions {
+        border-left-color: var(--line-strong);
+      }
+      .gap-row .gr-url {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--ink);
+        word-break: break-all;
+        margin-bottom: 8px;
+        line-height: 1.45;
+      }
+      .gap-row .gr-url a {
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .gap-row .gr-url a:hover {
+        color: var(--accent);
+        text-decoration: underline;
+      }
+      .gap-row .gr-mentions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .gap-row .gr-comp {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 3px 9px;
+        background: var(--bg-1);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--ink-mute);
+      }
+      .gap-row .gr-comp strong {
+        color: var(--bad);
+        font-weight: 500;
+        margin-right: 4px;
+      }
+      .gap-row .gr-comp.no-mentions {
+        color: var(--ink-faint);
+      }
+      .gap-row .gr-source {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--ink-faint);
+        letter-spacing: 0.04em;
+      }
+      .gap-row .gr-source span {
+        color: var(--ink-mute);
+        margin-right: 8px;
+      }
+
+      /* ---------- Per-URL table ---------- */
+      .url-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .url-table thead th {
+        text-align: left;
+        padding: 10px 12px;
+        background: var(--bg-0);
+        border-bottom: 1px solid var(--line-strong);
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--ink-faint);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 500;
+        white-space: nowrap;
+        cursor: pointer;
+        user-select: none;
+      }
+      .url-table thead th:hover {
+        color: var(--accent);
+      }
+      .url-table thead th.sorted {
+        color: var(--accent);
+      }
+      .url-table thead th.sorted::after {
+        content: " ▾";
+        font-size: 10px;
+      }
+      .url-table thead th.sorted.asc::after {
+        content: " ▴";
+      }
+      .url-table thead th.text-num {
+        text-align: right;
+      }
+      .url-table tbody td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      .url-table tbody tr.failed td {
+        opacity: 0.55;
+      }
+      .url-table tbody tr.self-domain {
+        background: rgba(232, 184, 106, 0.03);
+      }
+      .url-table .ut-url {
+        font-family: var(--mono);
+        font-size: 11px;
+        word-break: break-all;
+        max-width: 360px;
+        line-height: 1.45;
+      }
+      .url-table .ut-url a {
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .url-table .ut-url a:hover {
+        color: var(--accent);
+        text-decoration: underline;
+      }
+      .url-table .ut-url .self-badge {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 9px;
+        padding: 1px 6px;
+        background: rgba(232, 184, 106, 0.12);
+        border: 1px solid rgba(232, 184, 106, 0.4);
+        border-radius: 999px;
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-left: 4px;
+        vertical-align: middle;
+      }
+      .url-table .ut-source {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--ink-mute);
+      }
+      .url-table .ut-source div {
+        margin-bottom: 2px;
+        line-height: 1.4;
+      }
+      .url-table .ut-source div:last-child {
+        margin-bottom: 0;
+      }
+      .url-table .ut-source em {
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--ink);
+        font-size: 11px;
+      }
+      .url-table .ut-source .engine {
+        font-size: 9.5px;
+        padding: 1px 5px;
+        background: var(--bg-2);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        color: var(--ink-faint);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-left: 4px;
+      }
+      .url-table .ut-status {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .url-table .ut-status.ok {
+        color: var(--ok);
+      }
+      .url-table .ut-status.failed {
+        color: var(--bad);
+      }
+      .url-table .ut-num {
+        font-family: var(--mono);
+        text-align: right;
+        color: var(--ink);
+      }
+      .url-table .ut-num.zero {
+        color: var(--ink-faint);
+      }
+      .url-table .ut-num.you {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .url-table-filter {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+      .url-table-filter input {
+        flex: 1;
+        min-width: 200px;
+        padding: 8px 12px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .url-table-filter input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .url-table-filter select {
+        padding: 8px 12px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .url-table-wrap {
+        overflow-x: auto;
+        margin: 0 -8px;
+        padding: 0 8px;
+      }
+
+      /* ---------- Failed fetches ---------- */
+      .failed-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .failed-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 14px;
+        align-items: center;
+        padding: 10px 14px;
+        background: var(--bg-0);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        border-left: 3px solid var(--bad);
+        font-size: 12px;
+      }
+      .failed-row .fr-url {
+        font-family: var(--mono);
+        color: var(--ink);
+        word-break: break-all;
+        line-height: 1.4;
+      }
+      .failed-row .fr-reason {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--bad);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      /* ---------- AI Summary slot uses existing pattern ---------- */
+      /* (styles live in tokens.css via .ai-summary class hierarchy) */
+
+      /* ---------- Empty / error states ---------- */
+      .empty-state {
+        padding: 60px 32px;
+        text-align: center;
+        color: var(--ink-mute);
+        background: var(--bg-1);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+      }
+      .empty-state .ico {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 64px;
+        color: var(--ink-faint);
+        margin-bottom: 12px;
+        line-height: 1;
+      }
+      .empty-state h3 {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 400;
+        font-size: 22px;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+
+      #reportRoot {
+        display: none;
+      }
+      #reportRoot.show {
+        display: block;
+      }
+
+      /* Filter notes / metadata blocks */
+      .meta-note {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-mute);
+        letter-spacing: 0.04em;
+        margin-bottom: 14px;
+        line-height: 1.55;
+      }
+      .meta-note strong {
+        color: var(--ink);
+        font-weight: 500;
+      }
+
+      @media (max-width: 880px) {
+        .lb-row {
+          grid-template-columns: 24px 1fr;
+          gap: 8px;
+        }
+        .lb-row > *:nth-child(n + 3) {
+          grid-column: 2;
+          padding-top: 4px;
+        }
+        .url-table .ut-url {
+          max-width: 200px;
+        }
+        .panel {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a href="index.html" class="brand-mark" aria-label="AEO Suite home"
+          ><span>aeo</span></a
+        >
+        <div class="brand-text">
+          <div class="product">AEO Suite</div>
+          <div class="suite">Mention Frequency · v1</div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="status-pill">LIVE</div>
+      </header>
+
+      <section class="hero">
+        <div class="eyebrow">Step 05 — Mention Frequency</div>
+        <h1>How often does the AI's <em>cited sources</em> talk about you?</h1>
+        <p>
+          We fetch every URL surfaced in your scan, parse the page text, and
+          count how many times your brand and its competitors get mentioned.
+          Share-of-voice across the citation graph.
+        </p>
+      </section>
+
+      <!-- Source: continue panel + drop zone -->
+      <section class="source-section" id="sourceSection">
+        <div id="continueSlot"></div>
+        <div id="uploadSlot">
+          <div class="or-divider" id="orDivider" style="display: none">
+            Or upload a CSV
+          </div>
+          <label class="drop-zone" id="dropZone">
+            <input type="file" id="csvInput" accept=".csv,text/csv" />
+            <div class="dz-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <div class="dz-title">Drop a CSV, or click to browse</div>
+            <div class="dz-sub">
+              Use any visibility-scan CSV — same columns as the AI Visibility
+              output.
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <!-- Pre-analysis section (URLs counted, click to analyze) -->
+      <section id="preAnalysisSlot"></section>
+
+      <!-- Cover page — branded markup is injected by pdf-export.js at init.
+       Hidden until .pdf-mode on body. -->
+      <div
+        class="pdf-cover"
+        id="pdfCover"
+        data-report-title="Mention Frequency"
+      ></div>
+
+      <!-- Report (loading / results / error) -->
+      <section id="reportRoot"></section>
+    </div>
+
+    <!-- Floating "Prepare PDF Export" trigger — revealed after a report renders -->
+    <button
+      class="pdf-trigger hidden"
+      id="pdfTriggerBtn"
+      type="button"
+      title="Prepare and export this report as a PDF"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="12" y1="18" x2="12" y2="12" />
+        <polyline points="9 15 12 12 15 15" />
+      </svg>
+      Prepare PDF
+    </button>
+
+    <!-- Customization side panel + backdrop -->
+    <div class="pdf-panel-backdrop" id="pdfPanelBackdrop"></div>
+    <aside class="pdf-panel" id="pdfPanel" aria-hidden="true">
+      <div class="pdf-panel-header">
+        <div>
+          <div class="ttl">Prepare PDF Export</div>
+          <div class="sub">Customize before downloading</div>
+        </div>
+        <button
+          class="pdf-panel-close"
+          id="pdfPanelClose"
+          type="button"
+          aria-label="Close"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="pdf-panel-body">
+        <div class="pdf-panel-section">
+          <div class="sec-label">Client name</div>
+          <input type="text" id="pdfClientName" placeholder="e.g., Acme Inc." />
+        </div>
+
+        <div class="pdf-panel-section">
+          <div class="sec-label">Custom intro (optional)</div>
+          <textarea
+            id="pdfIntro"
+            placeholder="A brief note that appears on the cover page above the report. Useful for context, scope, or framing."
+          ></textarea>
+        </div>
+
+        <!-- Sections to include in the PDF. The data-target attribute must
+         match the ID of the section/panel in the rendered report.
+         Per-URL Analysis is OFF by default — it can be 100+ rows long
+         and would dominate the PDF. The CSV export is the better way
+         to share per-URL detail. -->
+        <div class="pdf-panel-section">
+          <div class="sec-label">Sections to include</div>
+          <div class="pdf-toggle-list" id="pdfToggleList">
+            <label class="pdf-toggle"
+              ><input type="checkbox" data-target="mfHeadline" checked />
+              <span class="label">Headline (share-of-voice)</span></label
+            >
+            <label class="pdf-toggle"
+              ><input type="checkbox" data-target="shareBarPanel" checked />
+              <span class="label">Share-of-mentions bar</span></label
+            >
+            <label class="pdf-toggle"
+              ><input type="checkbox" data-target="leaderboardPanel" checked />
+              <span class="label">Brand Leaderboard</span></label
+            >
+            <label class="pdf-toggle"
+              ><input type="checkbox" data-target="excludedPanel" checked />
+              <span class="label">Tracked but not counted</span></label
+            >
+            <label class="pdf-toggle"
+              ><input type="checkbox" data-target="gapPanel" checked />
+              <span class="label">Gap Pages</span></label
+            >
+            <label class="pdf-toggle"
+              ><input type="checkbox" data-target="urlTablePanel" />
+              <span class="label"
+                >Per-URL Analysis
+                <em
+                  style="
+                    font-style: italic;
+                    color: var(--ink-faint);
+                    font-size: 11px;
+                  "
+                  >(can be long — CSV export is often better)</em
+                ></span
+              ></label
+            >
+            <label class="pdf-toggle"
+              ><input type="checkbox" data-target="failedPanel" checked />
+              <span class="label">Failed Fetches</span></label
+            >
+          </div>
+        </div>
+
+        <div class="pdf-actions">
+          <button class="pdf-btn-primary" id="pdfGenerateBtn" type="button">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              width="14"
+              height="14"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Generate PDF
+          </button>
+          <button class="pdf-btn-secondary" id="pdfPreviewBtn" type="button">
+            Preview
+          </button>
+        </div>
+
+        <div class="pdf-hint">
+          <strong>How to get a clean PDF:</strong><br />
+          1. Click <strong>Generate PDF</strong> — your browser's print dialog
+          opens.<br />
+          2. Set <strong>Destination</strong> to "Save as PDF".<br />
+          3. Open <strong>More settings</strong> and
+          <strong>uncheck "Headers and footers"</strong> — this removes the URL,
+          date, and page-number lines.<br />
+          4. Set <strong>Background graphics</strong> to <strong>on</strong> so
+          the dark theme renders correctly.<br />
+          5. Set <strong>Margins</strong> to "Default" or "Minimum" for best
+          fit.<br />
+          6. Click <strong>Save</strong>.
+        </div>
+      </div>
+    </aside>
+
+    <script src="shared/state.js"></script>
+    <script src="shared/pdf-export.js"></script>
+    <script>
+      // ============================================================
+      // CONFIG
+      // ============================================================
+
+      // Real n8n endpoint for the Mention Frequency job. While empty, the
+      // page generates a MOCK response from the real input data so the UI
+      // can be reviewed before n8n is wired up.
+      const MENTION_FREQUENCY_WEBHOOK = "https://n8n-smartmarketer.duckdns.org/webhook/aeo-mention-frequency";
+
+      // Endpoint for the AI Summary panel — same pattern as other reports.
+      // While empty, the summary panel is hidden.
+      const SUMMARY_WEBHOOK = "";
+
+      // ============================================================
+      // COUNTABILITY FILTER
+      // ============================================================
+      // A real brand list and a "countable" brand list are different things.
+      // "On" is a real running shoe brand AND a common English preposition.
+      // If we search raw page text for "On" with word-boundary matching, we
+      // get hundreds of false matches from phrases like "click on", "based on",
+      // "on average." The count is meaningless.
+      //
+      // So Mention Frequency excludes brands whose names would generate
+      // unreliable counts in raw text. Two rules combine to do this:
+      //
+      // 1. MIN_COUNTABLE_BRAND_LENGTH — brands with names this short or
+      //    shorter are auto-excluded regardless of the list below. Two-letter
+      //    brands (HP, GE, BP, 3M, etc.) are tokens in any document and almost
+      //    always produce false counts. Three+ char minimum is conservative.
+      //
+      // 2. EXCLUDED_BRAND_NAMES — curated list of 3+ char brand names that
+      //    are common English words or otherwise unsafe to count. Edit freely:
+      //    add a brandKey (lowercase, no spaces or punctuation) to drop a
+      //    real brand that's polluting counts. Remove one if you find we're
+      //    dropping a brand you actually want counted in your vertical.
+      //
+      // Excluded brands still appear in the report — in a transparent
+      // "Tracked but not counted" section — so users see they were in the
+      // scan and understand why they don't have mention counts. We never
+      // silently drop them.
+      //
+      // The target brand is exempt from this filter. If your tracked brand
+      // has a problematic name (e.g., the user's own brand IS "On"), the
+      // entire report's numbers are unreliable and a separate warning fires.
+      //
+      // Curated based on common-English-word collision risk. To add: just
+      // append to the array. To remove: delete the entry.
+
+      const MIN_COUNTABLE_BRAND_LENGTH = 3;
+
+      const EXCLUDED_BRAND_NAMES = new Set([
+        // Most common collisions — short brand names that are everyday words
+        "on", // On Running — also a preposition
+        "gap", // The Gap — also a noun
+        "apple", // Apple — fruit, ubiquitous
+        "target", // Target — verb/noun, ubiquitous
+        "vine", // Vine — plural "vines" is a noun, ubiquitous
+        "coach", // Coach — verb/noun
+        "dove", // Dove — bird/past tense of "dive"
+        "polo", // Polo — sport
+        "shell", // Shell — noun
+        "square", // Square — geometric term, ubiquitous
+        "crown", // Crown — noun
+        "orange", // Orange — color, fruit
+        "monster", // Monster — noun
+        "sprint", // Sprint — verb
+        "pace", // Pace — verb/noun
+        "eagle", // Eagle — bird
+      ]);
+
+      // Helper: should we count mentions of this brand?
+      // Applies both rules: length floor + curated exclude list.
+      function isCountableBrand(displayName) {
+        const key = brandKey(displayName);
+        if (!key) return false;
+        if (key.length < MIN_COUNTABLE_BRAND_LENGTH) return false;
+        if (EXCLUDED_BRAND_NAMES.has(key)) return false;
+        return true;
+      }
+
+      // For backwards compatibility — the pre-analysis card still references
+      // this constant for the "common English word" warning. The set is now
+      // the same as EXCLUDED_BRAND_NAMES, since being on the exclude list is
+      // exactly the case where the warning was previously shown.
+      const AMBIGUOUS_BRAND_NAMES = EXCLUDED_BRAND_NAMES;
+
+      const PLATFORM_OPTIONS = [
+        { key: "gpt", label: "GPT" },
+        { key: "perplexity", label: "Perplexity" },
+        { key: "ai_mode", label: "AI Mode" },
+      ];
+
+      // ============================================================
+      // STATE
+      // ============================================================
+      const state = {
+        rows: null,
+        fields: null,
+        targetBrand: "",
+        targetBrandLower: "",
+        competitors: [], // [{ displayName, brandKey }] — countable competitors only
+        excludedFromCounting: [], // [{ displayName, brandKey, reason }] — tracked but uncountable
+        urls: [], // [{ url, surfacedBy: [{query, engine}], normalized }]
+        result: null, // webhook response
+        brandDomain: null, // host string, optional
+        elapsedTimer: null,
+        requestStartedAt: null,
+      };
+
+      const els = {
+        continueSlot: document.getElementById("continueSlot"),
+        orDivider: document.getElementById("orDivider"),
+        dropZone: document.getElementById("dropZone"),
+        csvInput: document.getElementById("csvInput"),
+        preAnalysisSlot: document.getElementById("preAnalysisSlot"),
+        reportRoot: document.getElementById("reportRoot"),
+      };
+
+      // ============================================================
+      // INIT
+      // ============================================================
+      function init() {
+        const ctx = ToolState.getScanContext();
+        if (ctx && ctx.rows.length > 0) {
+          renderContinuePanel(ctx);
+          els.orDivider.style.display = "flex";
+          processRows(ctx.rows);
+        }
+      }
+
+      function renderContinuePanel(ctx) {
+        const queryCount = ctx.queries.length;
+        const queryLabel = queryCount === 1 ? "query" : "queries";
+        const when = ctx.runAt
+          ? new Date(ctx.runAt).toLocaleString()
+          : "recent";
+        els.continueSlot.innerHTML = `
+      <div class="continue-panel">
+        <div class="cp-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="cp-text">
+          <div class="cp-title">Loaded from your latest scan</div>
+          <div class="cp-meta">${escapeHtml(ctx.brand || "Brand")} · ${queryCount} ${queryLabel} · ${ctx.rows.length} rows · ${when}</div>
+        </div>
+        <button class="btn btn-ghost" id="clearStateBtn" type="button">Use a different file</button>
+      </div>`;
+        document
+          .getElementById("clearStateBtn")
+          .addEventListener("click", () => {
+            ToolState.clear();
+            els.continueSlot.innerHTML = "";
+            els.orDivider.style.display = "none";
+            els.preAnalysisSlot.innerHTML = "";
+            els.reportRoot.classList.remove("show");
+            els.reportRoot.innerHTML = "";
+          });
+      }
+
+      // ============================================================
+      // CSV upload
+      // ============================================================
+      els.dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        els.dropZone.classList.add("is-dragover");
+      });
+      els.dropZone.addEventListener("dragleave", () =>
+        els.dropZone.classList.remove("is-dragover"),
+      );
+      els.dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        els.dropZone.classList.remove("is-dragover");
+        const file = e.dataTransfer.files[0];
+        if (file) handleCsvFile(file);
+      });
+      els.csvInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) handleCsvFile(file);
+      });
+
+      function handleCsvFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const rows = parseCsvToObjects(e.target.result);
+          processRows(rows);
+        };
+        reader.readAsText(file);
+      }
+
+      function parseCsvToObjects(text) {
+        const lines = [];
+        let cur = "",
+          inQ = false,
+          row = [];
+        for (let i = 0; i < text.length; i++) {
+          const c = text[i];
+          if (inQ) {
+            if (c === '"' && text[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else if (c === '"') inQ = false;
+            else cur += c;
+          } else {
+            if (c === '"') inQ = true;
+            else if (c === ",") {
+              row.push(cur);
+              cur = "";
+            } else if (c === "\n" || c === "\r") {
+              if (cur !== "" || row.length) {
+                row.push(cur);
+                lines.push(row);
+                row = [];
+                cur = "";
+              }
+              if (c === "\r" && text[i + 1] === "\n") i++;
+            } else cur += c;
+          }
+        }
+        if (cur !== "" || row.length) {
+          row.push(cur);
+          lines.push(row);
+        }
+        if (lines.length === 0) return [];
+        const headers = lines[0];
+        return lines.slice(1).map((arr) => {
+          const obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = arr[i] ?? "";
+          });
+          // Parse JSON-looking values (URLS, Sources, Queries arrays come through
+          // as JSON strings in some CSV exports)
+          Object.keys(obj).forEach((k) => {
+            const v = obj[k];
+            if (
+              typeof v === "string" &&
+              (v.startsWith("[") || v.startsWith("{"))
+            ) {
+              try {
+                obj[k] = JSON.parse(v);
+              } catch (e) {
+                /* leave as string */
+              }
+            }
+          });
+          return obj;
+        });
+      }
+
+      // ============================================================
+      // Field resolution — union-across-rows
+      // ============================================================
+      function resolveFields(rowsOrSample) {
+        const sources = Array.isArray(rowsOrSample)
+          ? rowsOrSample
+          : [rowsOrSample];
+        const keySet = new Set();
+        sources.forEach((row) => {
+          if (row && typeof row === "object") {
+            Object.keys(row).forEach((k) => keySet.add(k));
+          }
+        });
+        const keys = Array.from(keySet);
+        const norm = (k) =>
+          String(k)
+            .trim()
+            .toLowerCase()
+            .replace(/[\s_-]+/g, " ");
+        const find = (...patterns) => {
+          for (const k of keys) {
+            const n = norm(k);
+            for (const p of patterns) if (p.test(n)) return k;
+          }
+          return null;
+        };
+        return {
+          brand: find(/^brand$/, /brand name/, /^company$/),
+          platform: find(/^platform$/, /channel/),
+          query: find(/^query$/, /search query/, /^question$/),
+          urls: find(/^urls?$/, /^citations?$/),
+          sources: find(/^sources?$/, /source list/),
+          mentions: keys
+            .filter((k) => /mention/i.test(k))
+            .sort((a, b) => {
+              const an = parseInt((a.match(/\d+/) || [0])[0]);
+              const bn = parseInt((b.match(/\d+/) || [0])[0]);
+              return an - bn;
+            }),
+        };
+      }
+
+      function fieldVal(row, key, fb = "") {
+        if (!key) return fb;
+        const v = row[key];
+        if (v === undefined || v === null) return fb;
+        return typeof v === "string" ? v.trim() : v;
+      }
+
+      function normalizePlatform(v) {
+        return String(v || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[\s-]+/g, "_");
+      }
+
+      // ============================================================
+      // Brand utilities
+      // ============================================================
+      function brandKey(name) {
+        return String(name || "")
+          .toLowerCase()
+          .replace(/\b(inc|llc|ltd|corp|co|the|health|wellness|clinic)\b/g, "")
+          .replace(/[^a-z0-9]+/g, "")
+          .trim();
+      }
+
+      // ============================================================
+      // URL normalization
+      // ============================================================
+      // Spec: lowercase host, strip tracking params, drop fragments, drop
+      // default ports, normalize trailing slash on pathless URLs.
+      // Trade-off: /foo and /foo/ stay distinct (different pages on many sites).
+      function normalizeUrl(raw) {
+        if (!raw || typeof raw !== "string") return null;
+        let trimmed = raw.trim();
+        if (!trimmed) return null;
+        if (!/^https?:\/\//i.test(trimmed)) {
+          trimmed = "https://" + trimmed;
+        }
+        try {
+          const u = new URL(trimmed);
+          u.hostname = u.hostname.toLowerCase();
+          // Drop fragment
+          u.hash = "";
+          // Strip tracking params
+          const trackingPrefixes = /^(utm_|fbclid|gclid|ref|mc_|_ga|_gl)/i;
+          const keep = [];
+          u.searchParams.forEach((val, key) => {
+            if (!trackingPrefixes.test(key)) {
+              keep.push([key, val]);
+            }
+          });
+          // Rebuild query string (URLSearchParams.delete during iteration is unreliable)
+          const newParams = new URLSearchParams();
+          keep.forEach(([k, v]) => newParams.append(k, v));
+          u.search = newParams.toString();
+          // Drop default ports
+          if (
+            (u.protocol === "http:" && u.port === "80") ||
+            (u.protocol === "https:" && u.port === "443")
+          ) {
+            u.port = "";
+          }
+          // Normalize trailing slash on pathless URLs (path === '/' is canonical
+          // for root; path === '' becomes '/')
+          let result = u.toString();
+          // Drop trailing slash on root path so https://foo.com and https://foo.com/
+          // dedupe. Other paths keep their trailing slash distinction.
+          result = result.replace(/\/$/, (x) => (u.pathname === "/" ? "" : x));
+          // But ensure we don't end up with no slash AND a query
+          return result;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // Extract host (for self-domain matching)
+      function urlHost(raw) {
+        try {
+          const u = new URL(/^https?:\/\//i.test(raw) ? raw : "https://" + raw);
+          return u.hostname.toLowerCase().replace(/^www\./, "");
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // ============================================================
+      // Extract competitors from scan rows
+      // ============================================================
+      // Returns { countable, excluded } — the caller is responsible for
+      // putting these in the right places (state.competitors and
+      // state.excludedFromCounting respectively).
+      //
+      // "countable" means we trust raw-text mention counting for that brand.
+      // "excluded" means the brand was in the scan but is unsafe to count
+      // because it's too short or matches EXCLUDED_BRAND_NAMES.
+      function extractCompetitors(rows, fields, targetBrand) {
+        const targetKey = brandKey(targetBrand);
+        const map = new Map();
+        rows.forEach((row) => {
+          fields.mentions.forEach((k) => {
+            const raw = String(fieldVal(row, k) || "").trim();
+            if (!raw || raw === "0" || raw.length < 2) return;
+            const key = brandKey(raw);
+            if (!key || key === targetKey) return;
+            if (!map.has(key)) {
+              map.set(key, { displayName: raw, brandKey: key, count: 0 });
+            }
+            map.get(key).count += 1;
+          });
+        });
+        const all = Array.from(map.values()).sort((a, b) => b.count - a.count);
+        const countable = [];
+        const excluded = [];
+        all.forEach((c) => {
+          if (isCountableBrand(c.displayName)) {
+            countable.push(c);
+          } else {
+            const reason =
+              brandKey(c.displayName).length < MIN_COUNTABLE_BRAND_LENGTH
+                ? "too short"
+                : "common-word collision";
+            excluded.push({ ...c, reason });
+          }
+        });
+        return { countable, excluded };
+      }
+
+      // ============================================================
+      // Extract URLs from scan rows (citations + sources)
+      // ============================================================
+      function extractUrls(rows, fields) {
+        const map = new Map(); // normalizedUrl → { url, surfacedBy: [{query, engine}] }
+
+        rows.forEach((row) => {
+          const query = String(fieldVal(row, fields.query) || "").trim();
+          const engine = normalizePlatform(fieldVal(row, fields.platform));
+
+          // Citations from URLS field — array of {title, url} OR just strings
+          const urlsField = row[fields.urls];
+          const urlsList = [];
+          if (Array.isArray(urlsField)) {
+            urlsField.forEach((item) => {
+              if (typeof item === "string") urlsList.push(item);
+              else if (item && typeof item === "object" && item.url)
+                urlsList.push(item.url);
+            });
+          }
+
+          // Sources field — array of strings
+          const sourcesField = row[fields.sources];
+          if (Array.isArray(sourcesField)) {
+            sourcesField.forEach((item) => {
+              if (typeof item === "string") urlsList.push(item);
+            });
+          }
+
+          urlsList.forEach((rawUrl) => {
+            const normalized = normalizeUrl(rawUrl);
+            if (!normalized) return;
+            if (!map.has(normalized)) {
+              map.set(normalized, { url: normalized, surfacedBy: [] });
+            }
+            // Avoid duplicating the same (query, engine) attribution per URL
+            const entry = map.get(normalized);
+            const exists = entry.surfacedBy.some(
+              (s) => s.query === query && s.engine === engine,
+            );
+            if (!exists && query) {
+              entry.surfacedBy.push({ query, engine });
+            }
+          });
+        });
+
+        return Array.from(map.values());
+      }
+
+      // ============================================================
+      // PROCESS pipeline
+      // ============================================================
+      function processRows(rows) {
+        if (!rows || rows.length === 0) {
+          showEmpty("No data to display", "The dataset is empty.");
+          return;
+        }
+
+        state.rows = rows;
+        state.fields = resolveFields(rows);
+        state.targetBrand = String(
+          fieldVal(rows[0], state.fields.brand) || "",
+        ).trim();
+        state.targetBrandLower = state.targetBrand.toLowerCase();
+
+        if (!state.targetBrand) {
+          showEmpty(
+            "Target brand missing",
+            "This scan needs a Brand field to run mention frequency analysis.",
+          );
+          return;
+        }
+
+        // Determine the competitor list. Two paths:
+        //   classified: Competitor Report's LLM has classified the brands.
+        //               Pre-filtered to direct + adjacent. Still needs the
+        //               countability filter applied — the LLM might keep
+        //               "On" because it IS a real brand, but raw-text counting
+        //               of "on" produces meaningless inflation.
+        //   raw:        No classification cache available. Treat every Mention
+        //               1..N value as a candidate. Still apply countability filter.
+        //
+        // Either way we end up with two lists: countable (state.competitors)
+        // and excluded (state.excludedFromCounting). The excluded list still
+        // appears in the report, just not in mention counts or share math.
+        const classified = readClassifiedCompetitorsFromCache();
+        const targetKey = brandKey(state.targetBrand);
+        let candidates;
+        if (classified && classified.competitors.length > 0) {
+          candidates = classified.competitors
+            .filter((c) => c.brandKey !== targetKey)
+            .map((c) => ({
+              displayName: c.displayName,
+              brandKey: c.brandKey,
+              count: c.count,
+            }));
+          state.competitorListSource = "classified";
+          state.filteredOutByClassifier = classified.filteredOut || [];
+        } else {
+          // Raw extraction returns { countable, excluded }, but we treat all
+          // candidates uniformly here and re-filter below. We do this so the
+          // raw path and classified path go through the same exclusion logic.
+          const rawAll = extractCompetitors(
+            rows,
+            state.fields,
+            state.targetBrand,
+          );
+          candidates = [...rawAll.countable, ...rawAll.excluded];
+          state.competitorListSource = "raw";
+          state.filteredOutByClassifier = [];
+        }
+
+        // Apply the countability filter to whatever we got
+        state.competitors = [];
+        state.excludedFromCounting = [];
+        candidates.forEach((c) => {
+          if (isCountableBrand(c.displayName)) {
+            state.competitors.push(c);
+          } else {
+            const reason =
+              brandKey(c.displayName).length < MIN_COUNTABLE_BRAND_LENGTH
+                ? "too short"
+                : "common-word collision";
+            state.excludedFromCounting.push({ ...c, reason });
+          }
+        });
+
+        // Special case: target brand itself is uncountable. The whole report's
+        // numbers will be unreliable because we can't count the user's own
+        // mentions. Surface this prominently rather than burying it.
+        state.targetBrandIsUncountable = !isCountableBrand(state.targetBrand);
+
+        state.urls = extractUrls(rows, state.fields);
+
+        if (state.urls.length === 0) {
+          showEmpty(
+            "No URLs to analyze",
+            "No citation or source URLs were found in this scan. Mention frequency analysis needs URLs to fetch and parse.",
+          );
+          return;
+        }
+
+        // Cache hit? Skip pre-analysis and render directly
+        const cacheKey = resultCacheKey();
+        const cached = readResultCache(cacheKey);
+        if (cached) {
+          state.result = cached;
+          renderResult();
+          return;
+        }
+
+        renderPreAnalysis();
+      }
+
+      // ============================================================
+      // Cross-report: read Competitor Report's classified list
+      // ============================================================
+      // Matches the cache key shape that competitor-report.html writes.
+      // If the key doesn't exist, we fall back to raw Mention 1..N extraction.
+      function readClassifiedCompetitorsFromCache() {
+        const rows = state.rows || [];
+        const key = `aeo:classified-competitors:v1:${state.targetBrandLower}:${rows.length}`;
+        try {
+          const v = JSON.parse(localStorage.getItem(key) || "null");
+          if (v && Array.isArray(v.competitors)) return v;
+        } catch (e) {}
+        return null;
+      }
+
+      // ============================================================
+      // Pre-analysis: show URL count + Analyze button
+      // ============================================================
+      function renderPreAnalysis() {
+        const urlCount = state.urls.length;
+        const rawCount = state.urls.reduce(
+          (s, u) => s + u.surfacedBy.length,
+          0,
+        );
+
+        let warning = "";
+        if (urlCount >= 300) {
+          warning = `
+        <div class="pa-warning">
+          <strong>Large URL count:</strong> ${urlCount} URLs. Analysis typically takes
+          4+ minutes and may exceed your browser's fetch timeout. The job will keep
+          running on the server — if the browser disconnects, refresh once it's done
+          to retrieve the cached result.
+        </div>`;
+        } else if (urlCount >= 150) {
+          warning = `
+        <div class="pa-warning">
+          <strong>Moderate URL count:</strong> ${urlCount} URLs. Analysis typically takes
+          2-4 minutes. Keep this tab open while it runs.
+        </div>`;
+        }
+
+        // Target brand itself is uncountable — the report's numbers will be
+        // unreliable because we can't reliably count the user's own mentions.
+        // This is a strong warning, prominently shown.
+        let targetWarning = "";
+        if (state.targetBrandIsUncountable) {
+          targetWarning = `
+        <div class="pa-warning" style="background: rgba(217,122,111,0.08); border-color: rgba(217,122,111,0.45); text-align: left;">
+          <strong style="color: var(--bad);">Your brand name is uncountable.</strong>
+          "${escapeHtml(state.targetBrand)}" is too short or matches a common English word.
+          Raw-text mention counting will produce unreliable numbers for your own brand.
+          The rest of this report will run, but treat your share-of-voice number with skepticism.
+        </div>`;
+        }
+
+        // Excluded competitor brands — shown as informational, not a warning.
+        // The user should see we noticed these brands in the scan and
+        // deliberately excluded them from counts. Better than silently dropping.
+        let excludedNote = "";
+        if (state.excludedFromCounting.length > 0) {
+          const names = state.excludedFromCounting
+            .slice(0, 6)
+            .map((c) => `"${escapeHtml(c.displayName)}"`)
+            .join(", ");
+          const more =
+            state.excludedFromCounting.length > 6
+              ? ` and ${state.excludedFromCounting.length - 6} more`
+              : "";
+          excludedNote = `
+        <div class="pa-warning" style="background: rgba(150,150,150,0.06); border-color: rgba(150,150,150,0.3); text-align: left;">
+          <strong>${state.excludedFromCounting.length} ${state.excludedFromCounting.length === 1 ? "brand" : "brands"} excluded from counting:</strong>
+          ${names}${more}. These are real brands but their names are too short or
+          collide with common English words (e.g., "on", "gap"), so raw-text
+          mention counting would produce false positives. They'll appear in
+          the report as "tracked but not counted." Edit
+          <code style="font-family:var(--mono);font-size:11px;color:var(--ink-mute);">EXCLUDED_BRAND_NAMES</code>
+          in the source if you want to change this.
+        </div>`;
+        }
+
+        // Banner explaining how the competitor list was built. When we're in
+        // raw mode (no classification available), we recommend running
+        // Competitor Report first because short/common-word brands like "On"
+        // will otherwise inflate mention counts. When we're in classified mode,
+        // we note that for transparency — and surface what was filtered out.
+        let classificationBanner = "";
+        if (state.competitorListSource === "raw") {
+          classificationBanner = `
+        <div class="pa-warning" style="text-align: left; background: rgba(232,184,106,0.06); border-color: rgba(232,184,106,0.3);">
+          <strong>Tip — better classification available.</strong>
+          We're using the raw brand list from your scan's Mention fields.
+          That includes everything the AI named, even short common-word brands
+          (like "On") that will inflate mention counts in this report.
+          Run <a href="competitor-report.html" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: underline;">Competitor Report</a> first — it filters
+          incidental mentions via an LLM step, and Mention Frequency will
+          automatically reuse that filtered list next time you load this page.
+        </div>`;
+        } else if (
+          state.competitorListSource === "classified" &&
+          state.filteredOutByClassifier &&
+          state.filteredOutByClassifier.length > 0
+        ) {
+          const exampleNames = state.filteredOutByClassifier
+            .slice(0, 4)
+            .map((f) => `"${escapeHtml(f.name)}"`)
+            .join(", ");
+          const more =
+            state.filteredOutByClassifier.length > 4
+              ? ` and ${state.filteredOutByClassifier.length - 4} more`
+              : "";
+          classificationBanner = `
+        <div class="pa-warning" style="text-align: left; background: rgba(94,158,108,0.06); border-color: rgba(94,158,108,0.32);">
+          <strong style="color: var(--ok);">Using classified competitor list from Competitor Report.</strong>
+          <strong>${state.filteredOutByClassifier.length}</strong> incidental or ambiguous
+          mention${state.filteredOutByClassifier.length === 1 ? "" : "s"} excluded — including ${exampleNames}${more}.
+        </div>`;
+        }
+
+        els.preAnalysisSlot.innerHTML = `
+      <div class="pre-analysis">
+        <div class="pa-label">Ready to analyze</div>
+        <div class="pa-count"><em>${urlCount}</em> unique ${urlCount === 1 ? "URL" : "URLs"}</div>
+        <div class="pa-sub">
+          Deduped from ${rawCount} raw ${rawCount === 1 ? "citation" : "citations"} across your scan.
+          We'll fetch each page, parse the text, and count mentions of
+          <strong>${escapeHtml(state.targetBrand)}</strong> and
+          ${state.competitors.length} tracked ${state.competitors.length === 1 ? "competitor" : "competitors"}.
+        </div>
+        <div class="pa-meta">
+          <strong>${escapeHtml(state.targetBrand)}</strong> vs
+          <strong>${state.competitors.length}</strong> competitors ·
+          <strong>${urlCount}</strong> URLs to fetch
+        </div>
+        ${targetWarning}
+        ${classificationBanner}
+        ${warning}
+        ${excludedNote}
+        <button class="pa-btn" id="analyzeBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Start Analysis
+        </button>
+      </div>
+    `;
+        document
+          .getElementById("analyzeBtn")
+          .addEventListener("click", startAnalysis);
+      }
+
+      // ============================================================
+      // Start analysis — show loading state, call webhook (or mock)
+      // ============================================================
+      function startAnalysis() {
+        els.preAnalysisSlot.innerHTML = "";
+        showLoadingState();
+
+        // Estimated upper bound (in seconds) based on URL count.
+        // Used to swap loading-state messaging when elapsed exceeds it.
+        let estimateUpperSec;
+        const urlCount = state.urls.length;
+        if (urlCount < 50) estimateUpperSec = 60;
+        else if (urlCount < 150) estimateUpperSec = 120;
+        else if (urlCount < 300) estimateUpperSec = 240;
+        else estimateUpperSec = Math.max(360, urlCount * 1.2);
+
+        state.requestStartedAt = Date.now();
+        startElapsedTimer(estimateUpperSec);
+
+        runAnalysis()
+          .then((result) => {
+            state.result = result;
+            writeResultCache(resultCacheKey(), result);
+            stopElapsedTimer();
+            renderResult();
+          })
+          .catch((err) => {
+            console.error("Mention frequency error:", err);
+            stopElapsedTimer();
+            showError("Analysis failed", err.message || "Unknown error.");
+          });
+      }
+
+      async function runAnalysis() {
+        const payload = buildWebhookPayload();
+        if (!MENTION_FREQUENCY_WEBHOOK) {
+          // No real webhook configured — generate a mock response so the UI
+          // can be reviewed against real input data.
+          // Simulate a delay proportional to URL count so the loading state
+          // has time to render and the user can see the elapsed counter work.
+          const urlCount = state.urls.length;
+          const delayMs = Math.min(4000, 800 + urlCount * 20);
+          await new Promise((r) => setTimeout(r, delayMs));
+          return generateMockResponse(payload);
+        }
+        const r = await fetch(MENTION_FREQUENCY_WEBHOOK, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          mode: "cors",
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) throw new Error("Webhook HTTP " + r.status);
+        return await r.json();
+      }
+
+      function buildWebhookPayload() {
+        return {
+          brand: state.targetBrand,
+          competitors: state.competitors.map((c) => c.displayName),
+          urls: state.urls.map((u) => ({
+            url: u.url,
+            surfacedBy: u.surfacedBy,
+          })),
+        };
+      }
+
+      // ============================================================
+      // Loading state UI + elapsed timer
+      // ============================================================
+      function showLoadingState() {
+        const urlCount = state.urls.length;
+        let estimate;
+        if (urlCount < 50) estimate = "Usually under a minute";
+        else if (urlCount < 150) estimate = "Usually 1-2 minutes";
+        else if (urlCount < 300) estimate = "Usually 2-4 minutes";
+        else estimate = "Usually 4+ minutes — may exceed browser timeout";
+
+        els.reportRoot.classList.add("show");
+        els.reportRoot.innerHTML = `
+      <div class="loading-state" id="loadingState">
+        <div class="ls-spinner"></div>
+        <div class="ls-title">Analyzing ${urlCount} URLs across the citation graph…</div>
+        <div class="ls-elapsed" id="lsElapsed">Elapsed 0:00</div>
+        <div class="ls-estimate" id="lsEstimate">${escapeHtml(estimate)}</div>
+        <div class="ls-recovery" id="lsRecovery" style="display: none;"></div>
+      </div>
+    `;
+      }
+
+      function startElapsedTimer(estimateUpperSec) {
+        if (state.elapsedTimer) clearInterval(state.elapsedTimer);
+        state.elapsedTimer = setInterval(() => {
+          const elapsedSec = Math.floor(
+            (Date.now() - state.requestStartedAt) / 1000,
+          );
+          const elapsedEl = document.getElementById("lsElapsed");
+          const estimateEl = document.getElementById("lsEstimate");
+          const recoveryEl = document.getElementById("lsRecovery");
+          if (!elapsedEl) return;
+
+          const mins = Math.floor(elapsedSec / 60);
+          const secs = elapsedSec % 60;
+          elapsedEl.textContent = `Elapsed ${mins}:${String(secs).padStart(2, "0")}`;
+
+          // Swap estimate text when elapsed exceeds upper bound
+          if (elapsedSec > estimateUpperSec && estimateEl) {
+            estimateEl.textContent =
+              "Taking longer than expected — the job is still running on the server.";
+          }
+
+          // Show recovery message after 8 minutes (the typical browser fetch
+          // timeout cliff). The job is likely still running server-side; tell
+          // the user how to recover.
+          if (elapsedSec > 480 && recoveryEl) {
+            recoveryEl.style.display = "block";
+            recoveryEl.innerHTML = `
+          <strong>Browser connection may have timed out.</strong>
+          The analysis is likely still running on the server. Refresh this page in a few minutes — if the job completes, the result will be available from cache.
+        `;
+          }
+        }, 1000);
+      }
+
+      function stopElapsedTimer() {
+        if (state.elapsedTimer) {
+          clearInterval(state.elapsedTimer);
+          state.elapsedTimer = null;
+        }
+      }
+
+      // ============================================================
+      // Mock response generator
+      // ============================================================
+      // Generates a plausible response from the actual input data so the UI
+      // can be reviewed before n8n is wired. NOT a real analysis — values
+      // are randomized but biased to look realistic (target brand wins on
+      // own-domain URLs, top competitors get reasonable shares, ~6% URLs
+      // fail randomly).
+      function generateMockResponse(payload) {
+        const targetBrand = payload.brand;
+        const targetKey = brandKey(targetBrand);
+        const competitorList = payload.competitors.map((name) => ({
+          name,
+          key: brandKey(name),
+        }));
+
+        // Deterministic-ish randomness based on URL string so the mock is
+        // stable across reloads (until the input changes).
+        const seededRand = (seed) => {
+          let h = 0;
+          for (let i = 0; i < seed.length; i++)
+            h = (h * 31 + seed.charCodeAt(i)) | 0;
+          const x = Math.sin(h) * 10000;
+          return x - Math.floor(x);
+        };
+
+        const perUrl = payload.urls.map((u) => {
+          const r1 = seededRand(u.url + "status");
+          const isFailed = r1 < 0.06;
+          if (isFailed) {
+            const reasons = [
+              "timeout",
+              "http_403",
+              "http_404",
+              "connection_refused",
+              "http_500",
+            ];
+            return {
+              url: u.url,
+              status: "failed",
+              failureReason:
+                reasons[
+                  Math.floor(seededRand(u.url + "reason") * reasons.length)
+                ],
+              surfacedBy: u.surfacedBy,
+              mentions: {},
+              totalWordsAnalyzed: 0,
+              isSelfDomain: false,
+            };
+          }
+
+          // Self-domain detection (mock): pick a heuristic host from the brand
+          const mockSelfHost =
+            brandKey(targetBrand).replace(/\s+/g, "") + ".com";
+          const host = urlHost(u.url) || "";
+          const isSelfDomain =
+            host.includes(brandKey(targetBrand)) ||
+            host.replace(/^www\./, "") === mockSelfHost;
+
+          // Build mentions per brand. Bias:
+          // - Target brand: higher mentions on self-domain, modest off-domain
+          // - Top 3 competitors: random 0-4 each
+          // - Other competitors: random 0-1 each
+          const mentions = {};
+
+          const targetMentions = isSelfDomain
+            ? Math.floor(seededRand(u.url + "target") * 8) + 2
+            : Math.floor(seededRand(u.url + "target") * 4);
+          if (targetMentions > 0) mentions[targetKey] = targetMentions;
+
+          competitorList.forEach((c, idx) => {
+            const rr = seededRand(u.url + c.key);
+            let count;
+            if (idx < 3) {
+              count = Math.floor(rr * 5);
+            } else {
+              count = rr > 0.7 ? 1 : 0;
+            }
+            if (count > 0) mentions[c.key] = count;
+          });
+
+          const totalWords =
+            500 + Math.floor(seededRand(u.url + "words") * 2500);
+
+          return {
+            url: u.url,
+            status: "ok",
+            failureReason: null,
+            surfacedBy: u.surfacedBy,
+            mentions,
+            totalWordsAnalyzed: totalWords,
+            isSelfDomain,
+          };
+        });
+
+        // Compute brandTotals from perUrl
+        const okPages = perUrl.filter((p) => p.status === "ok");
+        const allBrands = [
+          { name: targetBrand, key: targetKey, isTarget: true },
+          ...competitorList.map((c) => ({
+            name: c.name,
+            key: c.key,
+            isTarget: false,
+          })),
+        ];
+
+        const brandTotals = allBrands.map((b) => {
+          let mentionSum = 0;
+          let pages = 0;
+          okPages.forEach((p) => {
+            const m = p.mentions[b.key] || 0;
+            if (m > 0) {
+              mentionSum += m;
+              pages += 1;
+            }
+          });
+          return {
+            brand: b.name,
+            brandKey: b.key,
+            mentions: mentionSum,
+            pagesWithMention: pages,
+            shareOfTrackedMentions: 0, // filled below
+            isTarget: b.isTarget,
+          };
+        });
+
+        const totalTrackedMentions = brandTotals.reduce(
+          (s, b) => s + b.mentions,
+          0,
+        );
+        brandTotals.forEach((b) => {
+          b.shareOfTrackedMentions =
+            totalTrackedMentions > 0
+              ? Math.round((b.mentions / totalTrackedMentions) * 1000) / 10
+              : 0;
+        });
+        brandTotals.sort((a, b) => b.mentions - a.mentions);
+
+        return {
+          analyzedAt: new Date().toISOString(),
+          totals: {
+            urlsRequested: payload.urls.length,
+            urlsAnalyzed: okPages.length,
+            urlsFailed: perUrl.length - okPages.length,
+            totalMentions: totalTrackedMentions,
+          },
+          brandTotals,
+          perUrl,
+          _mockGenerated: true,
+        };
+      }
+
+      // ============================================================
+      // CACHE
+      // ============================================================
+      function resultCacheKey() {
+        const compHash = state.competitors
+          .map((c) => c.brandKey)
+          .sort()
+          .join(",");
+        const compHashShort = simpleHash(compHash);
+        const scanRunAt = (ToolState.getScanContext() || {}).runAt || "no-scan";
+        return `aeo:mention-freq:v1:${brandKey(state.targetBrand)}:${compHashShort}:${scanRunAt}`;
+      }
+      function simpleHash(s) {
+        let h = 0;
+        for (let i = 0; i < s.length; i++)
+          h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+        return Math.abs(h).toString(36);
+      }
+      function readResultCache(key) {
+        try {
+          return JSON.parse(localStorage.getItem(key) || "null");
+        } catch (e) {
+          return null;
+        }
+      }
+      function writeResultCache(key, v) {
+        try {
+          localStorage.setItem(key, JSON.stringify(v));
+        } catch (e) {}
+      }
+
+      // ============================================================
+      // RENDER RESULT
+      // ============================================================
+      function renderResult() {
+        const r = state.result;
+        if (!r || !r.brandTotals) {
+          showError("Empty result", "The webhook returned no data.");
+          return;
+        }
+
+        // Sort brandTotals by mentions desc (re-sort defensively)
+        const brandTotals = [...r.brandTotals].sort(
+          (a, b) => b.mentions - a.mentions,
+        );
+        const targetTotal = brandTotals.find(
+          (b) => b.brandKey === brandKey(state.targetBrand),
+        ) || {
+          mentions: 0,
+          pagesWithMention: 0,
+          shareOfTrackedMentions: 0,
+        };
+
+        // ---- Self-domain footnote ----
+        const okPages = r.perUrl.filter((p) => p.status === "ok");
+        const selfDomainPages = okPages.filter((p) => p.isSelfDomain);
+        let selfMentions = 0;
+        selfDomainPages.forEach((p) => {
+          selfMentions += p.mentions[brandKey(state.targetBrand)] || 0;
+        });
+        const selfShareOfTargetMentions =
+          targetTotal.mentions > 0
+            ? Math.round((selfMentions / targetTotal.mentions) * 100)
+            : 0;
+
+        // ---- Pages with no tracked mention ----
+        const trackedKeys = brandTotals.map((b) => b.brandKey);
+        const pagesWithNoTrackedMention = okPages.filter((p) => {
+          return !trackedKeys.some((k) => (p.mentions[k] || 0) > 0);
+        }).length;
+
+        // ---- Mock indicator ----
+        const isMock = !!r._mockGenerated;
+        const mockBanner = isMock
+          ? `<div class="meta-note" style="padding: 10px 14px; background: rgba(232,184,106,0.06); border: 1px dashed rgba(232,184,106,0.4); border-radius: var(--radius-sm); margin-bottom: 18px;">
+          <strong>Mock data</strong> — MENTION_FREQUENCY_WEBHOOK is not configured. This report is showing synthetic mention counts generated from your real URLs and brand list so the UI can be reviewed. Wire up the n8n endpoint to see real analysis.
+        </div>`
+          : "";
+
+        let html = mockBanner;
+
+        // ---- Status pill row ----
+        html += `
+      <div class="status-pill-row">
+        <span class="sp ok"><strong>${r.totals.urlsAnalyzed}</strong> of ${r.totals.urlsRequested} URLs analyzed</span>
+        ${r.totals.urlsFailed > 0 ? `<span class="sp bad"><strong>${r.totals.urlsFailed}</strong> failed</span>` : ""}
+        <span class="sp"><strong>${r.totals.totalMentions}</strong> total mentions</span>
+        ${pagesWithNoTrackedMention > 0 ? `<span class="sp"><strong>${pagesWithNoTrackedMention}</strong> pages with no tracked mention</span>` : ""}
+      </div>
+    `;
+
+        // ---- Headline ----
+        html += renderHeadline(
+          targetTotal,
+          brandTotals,
+          selfShareOfTargetMentions,
+        );
+
+        // ---- Stacked bar (share of voice) ----
+        html += renderShareBar(brandTotals);
+
+        // ---- Brand leaderboard ----
+        html += renderLeaderboard(brandTotals);
+
+        // ---- Tracked but not counted ----
+        // Brands that were in the scan but excluded from counting via the
+        // countability filter. Transparent visibility — the user sees these
+        // brands exist in their competitor space, just that we couldn't
+        // reliably count them in raw text.
+        if (
+          state.excludedFromCounting &&
+          state.excludedFromCounting.length > 0
+        ) {
+          html += renderExcludedSection();
+        }
+
+        // ---- Gap pages ----
+        html += renderGapPages(okPages);
+
+        // ---- Per-URL table ----
+        html += renderUrlTable(r.perUrl);
+
+        // ---- Failed fetches ----
+        const failed = r.perUrl.filter((p) => p.status === "failed");
+        if (failed.length > 0) {
+          html += renderFailedFetches(failed);
+        }
+
+        // ---- AI Summary slot (placeholder while SUMMARY_WEBHOOK is empty) ----
+        // (Hidden until configured — follows the same pattern as other reports.)
+
+        els.reportRoot.classList.add("show");
+        els.reportRoot.innerHTML = html;
+
+        attachResultHandlers();
+
+        // Reveal the PDF trigger now that there's something to export.
+        // Prefill the client-name field with the brand if available — the user
+        // can still override it in the customization panel.
+        if (window.PdfExport) {
+          window.PdfExport.showTrigger();
+          window.PdfExport.prefillClientName(state.targetBrand);
+        }
+      }
+
+      function renderHeadline(
+        targetTotal,
+        brandTotals,
+        selfShareOfTargetMentions,
+      ) {
+        const share = targetTotal.shareOfTrackedMentions || 0;
+        const topCompetitor = brandTotals.find(
+          (b) => !b.isTarget && b.brandKey !== brandKey(state.targetBrand),
+        );
+        let footnote = "";
+        if (selfShareOfTargetMentions >= 20) {
+          footnote = `<div class="footnote">${selfShareOfTargetMentions}% of your mentions come from your own domain.</div>`;
+        }
+
+        const headlineSub = topCompetitor
+          ? `Your share of tracked mentions across the citation graph. <strong>${escapeHtml(topCompetitor.brand)}</strong> leads at <strong>${topCompetitor.shareOfTrackedMentions}%</strong>.`
+          : `Your share of tracked mentions across the citation graph.`;
+
+        return `
+      <div class="mf-headline" id="mfHeadline">
+        <div class="label">Share of voice · ${escapeHtml(state.targetBrand)}</div>
+        <div class="big">${share}%</div>
+        <div class="sub">${headlineSub}</div>
+        ${footnote}
+      </div>
+    `;
+      }
+
+      function renderShareBar(brandTotals) {
+        // Show target + top 5 competitors + "other tracked" bucket
+        const targetKey = brandKey(state.targetBrand);
+        const target = brandTotals.find((b) => b.brandKey === targetKey);
+        const competitors = brandTotals.filter(
+          (b) => b.brandKey !== targetKey && b.mentions > 0,
+        );
+        const top5 = competitors.slice(0, 5);
+        const otherTracked = competitors.slice(5);
+        const otherSum = otherTracked.reduce((s, b) => s + b.mentions, 0);
+
+        const total = brandTotals.reduce((s, b) => s + b.mentions, 0);
+        if (total === 0) {
+          return `
+        <div class="panel" id="shareBarPanel">
+          <div class="panel-label">Share of mentions</div>
+          <div class="meta-note">No tracked brands were mentioned in any of the analyzed pages.</div>
+        </div>`;
+        }
+
+        const segs = [];
+        if (target && target.mentions > 0) {
+          const pct = Math.round((target.mentions / total) * 100);
+          segs.push({
+            cls: "you",
+            count: target.mentions,
+            pct,
+            label: state.targetBrand,
+          });
+        }
+        top5.forEach((b, i) => {
+          const pct = Math.round((b.mentions / total) * 100);
+          segs.push({
+            cls: `c${i + 1}`,
+            count: b.mentions,
+            pct,
+            label: b.brand,
+          });
+        });
+        if (otherSum > 0) {
+          const pct = Math.round((otherSum / total) * 100);
+          segs.push({
+            cls: "other",
+            count: otherSum,
+            pct,
+            label: `+${otherTracked.length} more`,
+          });
+        }
+
+        return `
+      <div class="panel" id="shareBarPanel">
+        <div class="panel-label">Share of mentions across the citation graph</div>
+        <div class="sov-bar">
+          ${segs
+            .map(
+              (s) => `
+            <div class="sov-seg ${s.cls}" style="flex: ${s.count} 0 0;" title="${escapeHtml(s.label)}: ${s.count} mentions (${s.pct}%)">
+              ${s.pct >= 8 ? s.pct + "%" : ""}
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+        <div class="sov-legend">
+          ${segs.map((s) => `<span class="lg"><span class="sw ${s.cls}"></span><strong>${escapeHtml(s.label)}</strong> ${s.count} (${s.pct}%)</span>`).join("")}
+        </div>
+      </div>
+    `;
+      }
+
+      function renderLeaderboard(brandTotals) {
+        const maxMentions = Math.max(...brandTotals.map((b) => b.mentions), 1);
+        const targetKey = brandKey(state.targetBrand);
+
+        const rows = brandTotals
+          .map((b, i) => {
+            const isYou = b.brandKey === targetKey;
+            const pct = (b.mentions / maxMentions) * 100;
+            return `
+        <div class="lb-row ${isYou ? "you" : ""}">
+          <div class="lb-rank">${i + 1}</div>
+          <div class="lb-name">
+            ${escapeHtml(b.brand)}
+            ${isYou ? '<span class="you-tag">You</span>' : ""}
+          </div>
+          <div class="lb-bar-wrap">
+            <div class="lb-bar"><div style="width: ${pct.toFixed(1)}%;"></div></div>
+            <div class="lb-bar-meta">${b.mentions} ${b.mentions === 1 ? "mention" : "mentions"} · ${b.pagesWithMention} ${b.pagesWithMention === 1 ? "page" : "pages"}</div>
+          </div>
+          <div class="lb-num"><strong>${b.mentions}</strong></div>
+          <div class="lb-num ${b.pagesWithMention === 0 ? "dim" : ""}">${b.pagesWithMention}</div>
+          <div class="lb-share">${b.shareOfTrackedMentions}%</div>
+        </div>
+      `;
+          })
+          .join("");
+
+        // Ambiguous brand warning
+        const ambig = brandTotals.filter((b) =>
+          AMBIGUOUS_BRAND_NAMES.has(b.brandKey),
+        );
+        const ambigWarning =
+          ambig.length > 0
+            ? `<div class="ambig-warning">
+          <strong>${ambig.map((b) => '"' + escapeHtml(b.brand) + '"').join(", ")}</strong>
+          ${ambig.length === 1 ? "is a" : "are"} common English word${ambig.length === 1 ? "" : "s"}.
+          Mention counts may include false positives where the word appears outside a brand context.
+        </div>`
+            : "";
+
+        return `
+      <div class="panel" id="leaderboardPanel">
+        <div class="panel-label with-action">
+          <span>Brand Leaderboard ${infoTip('Every tracked brand ranked by total mentions across the citation graph. "Pages" is the number of distinct URLs where that brand was named at least once. "Share" is mentions divided by total tracked-brand mentions.')}</span>
+          <button class="btn-export-csv" id="exportLbCsvBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+        <div class="lb-table">${rows}</div>
+        ${ambigWarning}
+      </div>
+    `;
+      }
+
+      function renderGapPages(okPages) {
+        const targetKey = brandKey(state.targetBrand);
+        const competitorKeys = state.competitors.map((c) => c.brandKey);
+
+        // A "gap page" is a URL that mentions ANY competitor but NOT the target brand.
+        // (Pages mentioning no tracked brand at all are a separate signal — they
+        // appear at the bottom of this list with no-mentions styling.)
+        const gapWithComps = [];
+        const gapNoMentions = [];
+        okPages.forEach((p) => {
+          const yourMentions = p.mentions[targetKey] || 0;
+          if (yourMentions > 0) return; // not a gap — you're mentioned
+          const compMentions = {};
+          let compTotal = 0;
+          competitorKeys.forEach((k) => {
+            const c = p.mentions[k] || 0;
+            if (c > 0) {
+              compMentions[k] = c;
+              compTotal += c;
+            }
+          });
+          if (compTotal > 0) {
+            gapWithComps.push({ ...p, compMentions, compTotal });
+          } else {
+            gapNoMentions.push({ ...p });
+          }
+        });
+        gapWithComps.sort((a, b) => b.compTotal - a.compTotal);
+
+        if (gapWithComps.length === 0 && gapNoMentions.length === 0) {
+          return `
+        <div class="panel" id="gapPanel">
+          <div class="panel-label">Gap Pages ${infoTip("Pages cited in your scan where competitors are mentioned but your brand isn\\u2019t. The most actionable section \\u2014 these are pages you want to either earn mentions on, or compete with via your own content.")}</div>
+          <div class="meta-note">No gap pages — every analyzed URL either mentioned your brand or had no tracked brand mentions.</div>
+        </div>
+      `;
+        }
+
+        const compRows = gapWithComps
+          .slice(0, 30)
+          .map((p) => {
+            const compPills = Object.entries(p.compMentions)
+              .sort(([, a], [, b]) => b - a)
+              .map(([k, count]) => {
+                const comp = state.competitors.find((c) => c.brandKey === k);
+                const name = comp ? comp.displayName : k;
+                return `<span class="gr-comp"><strong>${count}×</strong>${escapeHtml(name)}</span>`;
+              })
+              .join("");
+            const sourceBits = p.surfacedBy
+              .slice(0, 3)
+              .map((s) => {
+                const opt = PLATFORM_OPTIONS.find((o) => o.key === s.engine);
+                const engine = opt ? opt.label : (s.engine || "").toUpperCase();
+                return `<span>${escapeHtml(s.query)} <em style="color:var(--ink-faint);">${engine ? "·  " + engine : ""}</em></span>`;
+              })
+              .join("");
+            const moreSurfaced =
+              p.surfacedBy.length > 3
+                ? `<span>+${p.surfacedBy.length - 3} more</span>`
+                : "";
+            return `
+        <div class="gap-row">
+          <div class="gr-url"><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.url)}</a></div>
+          <div class="gr-mentions">${compPills}</div>
+          <div class="gr-source">Surfaced by: ${sourceBits}${moreSurfaced}</div>
+        </div>
+      `;
+          })
+          .join("");
+
+        const noMentionsExtra =
+          gapNoMentions.length > 0
+            ? `<div class="meta-note" style="margin-top: 18px;">
+          <strong>${gapNoMentions.length} additional ${gapNoMentions.length === 1 ? "page mentions" : "pages mention"} no tracked brand at all.</strong>
+          ${gapNoMentions.length <= 5 ? "" : "These are likely off-topic citations, opinion pieces, or pages where the AI used the source for context rather than brand mention."} See the per-URL table below.
+        </div>`
+            : "";
+
+        const moreNote =
+          gapWithComps.length > 30
+            ? `<div class="meta-note" style="margin-top: 12px;">Showing top 30 gap pages (of ${gapWithComps.length}). See per-URL table for the full list.</div>`
+            : "";
+
+        return `
+      <div class="panel" id="gapPanel">
+        <div class="panel-label">Gap Pages · ${gapWithComps.length} ${gapWithComps.length === 1 ? "page" : "pages"} ${infoTip("Pages cited in your scan where competitors are mentioned but your brand isn\\u2019t. The most actionable section \\u2014 these are pages you want to either earn mentions on, or compete with via your own content.")}</div>
+        <div class="gap-list">${compRows}</div>
+        ${moreNote}
+        ${noMentionsExtra}
+      </div>
+    `;
+      }
+
+      // ============================================================
+      // Per-URL table
+      // ============================================================
+      // We keep state for the table's current sort + filter outside the
+      // render function so re-renders preserve user interactions.
+      const tableState = {
+        sortKey: "totalMentions", // 'url' | 'totalMentions' | 'targetMentions' | 'status'
+        sortDir: "desc", // 'asc' | 'desc'
+        filterText: "",
+        filterStatus: "all", // 'all' | 'ok' | 'failed'
+      };
+
+      function renderUrlTable(perUrl) {
+        const targetKey = brandKey(state.targetBrand);
+
+        // Always show ALL brands as columns so the table is auditable. The
+        // user can filter via the text input.
+        const allBrands = (state.result.brandTotals || []).map((b) => ({
+          key: b.brandKey,
+          name: b.brand,
+          isTarget: b.brandKey === targetKey,
+        }));
+
+        return `
+      <div class="panel" id="urlTablePanel">
+        <div class="panel-label with-action">
+          <span>Per-URL Analysis ${infoTip("Every URL we fetched, with the source query and engine that surfaced it, status (success or failure), and per-brand mention counts. Self-domain pages (your own site) are highlighted so you can see how much of your share comes from yourself.")}</span>
+          <button class="btn-export-csv" id="exportUrlCsvBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+
+        <div class="url-table-filter">
+          <input type="text" id="urlFilterInput" placeholder="Filter by URL or query…" />
+          <select id="urlFilterStatus">
+            <option value="all">All statuses</option>
+            <option value="ok">Successful only</option>
+            <option value="failed">Failed only</option>
+          </select>
+        </div>
+
+        <div class="url-table-wrap" id="urlTableWrap">
+          ${renderUrlTableBody(perUrl, allBrands, targetKey)}
+        </div>
+      </div>
+    `;
+      }
+
+      function renderUrlTableBody(perUrl, allBrands, targetKey) {
+        // Apply filter
+        const filtered = perUrl.filter((p) => {
+          if (tableState.filterStatus === "ok" && p.status !== "ok")
+            return false;
+          if (tableState.filterStatus === "failed" && p.status !== "failed")
+            return false;
+          if (tableState.filterText) {
+            const needle = tableState.filterText.toLowerCase();
+            const hayUrl = p.url.toLowerCase();
+            const hayQueries = p.surfacedBy
+              .map((s) => s.query)
+              .join(" ")
+              .toLowerCase();
+            if (!hayUrl.includes(needle) && !hayQueries.includes(needle))
+              return false;
+          }
+          return true;
+        });
+
+        // Apply sort
+        const sorted = [...filtered].sort((a, b) => {
+          let av, bv;
+          switch (tableState.sortKey) {
+            case "url":
+              av = a.url;
+              bv = b.url;
+              break;
+            case "status":
+              av = a.status;
+              bv = b.status;
+              break;
+            case "targetMentions":
+              av = a.mentions[targetKey] || 0;
+              bv = b.mentions[targetKey] || 0;
+              break;
+            case "totalMentions":
+            default:
+              av = Object.values(a.mentions || {}).reduce((s, x) => s + x, 0);
+              bv = Object.values(b.mentions || {}).reduce((s, x) => s + x, 0);
+          }
+          if (av < bv) return tableState.sortDir === "asc" ? -1 : 1;
+          if (av > bv) return tableState.sortDir === "asc" ? 1 : -1;
+          return 0;
+        });
+
+        const head = `
+      <thead>
+        <tr>
+          <th data-sort="url" class="${tableState.sortKey === "url" ? "sorted " + (tableState.sortDir === "asc" ? "asc" : "") : ""}">URL · Source</th>
+          <th data-sort="status" class="${tableState.sortKey === "status" ? "sorted " + (tableState.sortDir === "asc" ? "asc" : "") : ""}">Status</th>
+          <th class="text-num" data-sort="targetMentions" class="${tableState.sortKey === "targetMentions" ? "sorted " + (tableState.sortDir === "asc" ? "asc" : "") : ""}">${escapeHtml(state.targetBrand)}</th>
+          ${allBrands
+            .filter((b) => !b.isTarget)
+            .map((b) => `<th class="text-num">${escapeHtml(b.name)}</th>`)
+            .join("")}
+          <th class="text-num" data-sort="totalMentions" class="${tableState.sortKey === "totalMentions" ? "sorted " + (tableState.sortDir === "asc" ? "asc" : "") : ""}">Total</th>
+        </tr>
+      </thead>
+    `;
+
+        const rows = sorted
+          .map((p) => {
+            const totalMentions = Object.values(p.mentions || {}).reduce(
+              (s, x) => s + x,
+              0,
+            );
+            const sourceRows = p.surfacedBy
+              .slice(0, 4)
+              .map((s) => {
+                const opt = PLATFORM_OPTIONS.find((o) => o.key === s.engine);
+                const engine = opt ? opt.label : (s.engine || "").toUpperCase();
+                return `<div><em>${escapeHtml(s.query)}</em><span class="engine">${escapeHtml(engine)}</span></div>`;
+              })
+              .join("");
+            const moreSrc =
+              p.surfacedBy.length > 4
+                ? `<div style="color:var(--ink-faint);font-size:10px;">+${p.surfacedBy.length - 4} more</div>`
+                : "";
+
+            return `
+        <tr class="${p.status === "failed" ? "failed" : ""} ${p.isSelfDomain ? "self-domain" : ""}">
+          <td>
+            <div class="ut-url">
+              <a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${escapeHtml(p.url)}</a>
+              ${p.isSelfDomain ? '<span class="self-badge">Your domain</span>' : ""}
+            </div>
+            <div class="ut-source">${sourceRows}${moreSrc}</div>
+          </td>
+          <td>
+            <span class="ut-status ${p.status}">${p.status === "ok" ? "OK" : p.failureReason || "Failed"}</span>
+            ${
+              p.totalWordsAnalyzed > 0 &&
+              p.totalWordsAnalyzed < 200 &&
+              p.status === "ok"
+                ? `<div style="font-family:var(--mono);font-size:9.5px;color:var(--ink-faint);margin-top:3px;letter-spacing:0.06em;">low word count · likely SPA</div>`
+                : ""
+            }
+          </td>
+          <td class="ut-num ${(p.mentions[targetKey] || 0) === 0 ? "zero" : "you"}">${p.mentions[targetKey] || 0}</td>
+          ${allBrands
+            .filter((b) => !b.isTarget)
+            .map(
+              (b) =>
+                `<td class="ut-num ${(p.mentions[b.key] || 0) === 0 ? "zero" : ""}">${p.mentions[b.key] || 0}</td>`,
+            )
+            .join("")}
+          <td class="ut-num ${totalMentions === 0 ? "zero" : ""}"><strong>${totalMentions}</strong></td>
+        </tr>
+      `;
+          })
+          .join("");
+
+        const note =
+          sorted.length === 0
+            ? `<div class="meta-note" style="margin-top: 14px;">No URLs match the current filter.</div>`
+            : `<div class="meta-note" style="margin-top: 10px;">Showing ${sorted.length} of ${perUrl.length} URLs. Click column headers to sort.</div>`;
+
+        return `
+      <table class="url-table" id="urlTable">${head}<tbody>${rows}</tbody></table>
+      ${note}
+    `;
+      }
+
+      function renderFailedFetches(failed) {
+        const rows = failed
+          .map(
+            (p) => `
+      <div class="failed-row">
+        <div class="fr-url"><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener" style="color:var(--ink-mute);text-decoration:none;">${escapeHtml(p.url)}</a></div>
+        <div class="fr-reason">${escapeHtml(p.failureReason || "unknown")}</div>
+      </div>
+    `,
+          )
+          .join("");
+        return `
+      <div class="panel" id="failedPanel">
+        <div class="panel-label">Failed Fetches · ${failed.length} ${failed.length === 1 ? "URL" : "URLs"} ${infoTip("URLs we couldn\\u2019t fetch or parse, with the reason. Useful for transparency \\u2014 the headline numbers exclude these.")}</div>
+        <div class="failed-list">${rows}</div>
+      </div>
+    `;
+      }
+
+      // Tracked but not counted — brands in the scan whose names are too
+      // short or collide with common English words. Shown for transparency
+      // so the user knows these brands exist in their competitor space.
+      function renderExcludedSection() {
+        const rows = state.excludedFromCounting
+          .map(
+            (c) => `
+      <div class="failed-row" style="border-left-color: var(--line-strong);">
+        <div class="fr-url" style="font-family: var(--serif); font-style: italic; font-size: 14px;">
+          ${escapeHtml(c.displayName)}
+          <span style="color: var(--ink-faint); font-family: var(--mono); font-size: 10.5px; margin-left: 6px;">${c.count} ${c.count === 1 ? "AI mention" : "AI mentions"} in scan</span>
+        </div>
+        <div class="fr-reason" style="color: var(--ink-mute);">${escapeHtml(c.reason)}</div>
+      </div>
+    `,
+          )
+          .join("");
+        return `
+      <div class="panel" id="excludedPanel">
+        <div class="panel-label">Tracked but not counted · ${state.excludedFromCounting.length} ${state.excludedFromCounting.length === 1 ? "brand" : "brands"} ${infoTip('Brands the AI mentioned in your scan that we excluded from raw-text counting. Either their names are too short (e.g., 2-letter brands like \\"On\\") or they collide with common English words (e.g., \\"Gap\\", \\"Apple\\"). Real brands, but counting them via word-boundary regex on raw page text would produce false positives that distort the share-of-voice numbers.')}</div>
+        <div class="meta-note" style="margin-bottom: 14px;">
+          These brands appeared in your scan's Mention fields but their names
+          are unsafe to count in raw HTML text. They're real brands — just not
+          ones we can reliably measure via this method.
+        </div>
+        <div class="failed-list">${rows}</div>
+      </div>
+    `;
+      }
+
+      // ============================================================
+      // Handlers (post-render)
+      // ============================================================
+      function attachResultHandlers() {
+        // Table sort
+        document
+          .querySelectorAll("#urlTable thead th[data-sort]")
+          .forEach((th) => {
+            th.addEventListener("click", () => {
+              const key = th.getAttribute("data-sort");
+              if (tableState.sortKey === key) {
+                tableState.sortDir =
+                  tableState.sortDir === "asc" ? "desc" : "asc";
+              } else {
+                tableState.sortKey = key;
+                tableState.sortDir = "desc";
+              }
+              rerenderUrlTable();
+            });
+          });
+
+        // Table filter
+        const filterInput = document.getElementById("urlFilterInput");
+        if (filterInput) {
+          filterInput.addEventListener("input", (e) => {
+            tableState.filterText = e.target.value;
+            rerenderUrlTable();
+          });
+        }
+        const filterStatus = document.getElementById("urlFilterStatus");
+        if (filterStatus) {
+          filterStatus.addEventListener("change", (e) => {
+            tableState.filterStatus = e.target.value;
+            rerenderUrlTable();
+          });
+        }
+
+        // CSV exports
+        const lbBtn = document.getElementById("exportLbCsvBtn");
+        if (lbBtn) lbBtn.addEventListener("click", exportLeaderboardCsv);
+        const urlBtn = document.getElementById("exportUrlCsvBtn");
+        if (urlBtn) urlBtn.addEventListener("click", exportUrlTableCsv);
+      }
+
+      function rerenderUrlTable() {
+        const wrap = document.getElementById("urlTableWrap");
+        if (!wrap) return;
+        const targetKey = brandKey(state.targetBrand);
+        const allBrands = (state.result.brandTotals || []).map((b) => ({
+          key: b.brandKey,
+          name: b.brand,
+          isTarget: b.brandKey === targetKey,
+        }));
+        wrap.innerHTML = renderUrlTableBody(
+          state.result.perUrl,
+          allBrands,
+          targetKey,
+        );
+        // Re-wire sort handlers on the new headers
+        document
+          .querySelectorAll("#urlTable thead th[data-sort]")
+          .forEach((th) => {
+            th.addEventListener("click", () => {
+              const key = th.getAttribute("data-sort");
+              if (tableState.sortKey === key) {
+                tableState.sortDir =
+                  tableState.sortDir === "asc" ? "desc" : "asc";
+              } else {
+                tableState.sortKey = key;
+                tableState.sortDir = "desc";
+              }
+              rerenderUrlTable();
+            });
+          });
+      }
+
+      // ============================================================
+      // CSV exports
+      // ============================================================
+      function csvEscape(v) {
+        return '"' + String(v ?? "").replace(/"/g, '""') + '"';
+      }
+
+      function exportLeaderboardCsv() {
+        const r = state.result;
+        const headers = [
+          "Rank",
+          "Brand",
+          "Is Target",
+          "Mentions",
+          "Pages with mention",
+          "Share of tracked mentions (%)",
+        ];
+        const lines = [headers.map(csvEscape).join(",")];
+        r.brandTotals.forEach((b, i) => {
+          lines.push(
+            [
+              i + 1,
+              b.brand,
+              b.isTarget ? "Yes" : "No",
+              b.mentions,
+              b.pagesWithMention,
+              b.shareOfTrackedMentions,
+            ]
+              .map(csvEscape)
+              .join(","),
+          );
+        });
+        downloadCsv(
+          lines.join("\n"),
+          `aeo-mention-frequency-leaderboard-${new Date().toISOString().split("T")[0]}.csv`,
+        );
+      }
+
+      function exportUrlTableCsv() {
+        const r = state.result;
+        const targetKey = brandKey(state.targetBrand);
+        const allBrands = r.brandTotals.map((b) => ({
+          key: b.brandKey,
+          name: b.brand,
+        }));
+        const headers = [
+          "URL",
+          "Status",
+          "Failure reason",
+          "Self domain",
+          "Words analyzed",
+          "Source queries",
+          "Source engines",
+          ...allBrands.map((b) => b.name + " mentions"),
+          "Total mentions",
+        ];
+        const lines = [headers.map(csvEscape).join(",")];
+        r.perUrl.forEach((p) => {
+          const totalMentions = Object.values(p.mentions || {}).reduce(
+            (s, x) => s + x,
+            0,
+          );
+          const queries = p.surfacedBy.map((s) => s.query).join("; ");
+          const engines = p.surfacedBy.map((s) => s.engine).join("; ");
+          const row = [
+            p.url,
+            p.status,
+            p.failureReason || "",
+            p.isSelfDomain ? "Yes" : "No",
+            p.totalWordsAnalyzed,
+            queries,
+            engines,
+            ...allBrands.map((b) => p.mentions[b.key] || 0),
+            totalMentions,
+          ];
+          lines.push(row.map(csvEscape).join(","));
+        });
+        downloadCsv(
+          lines.join("\n"),
+          `aeo-mention-frequency-urls-${new Date().toISOString().split("T")[0]}.csv`,
+        );
+      }
+
+      function downloadCsv(csv, filename) {
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      // ============================================================
+      // Empty / error states
+      // ============================================================
+      function showEmpty(title, body) {
+        els.reportRoot.classList.add("show");
+        els.reportRoot.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">∅</div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(body)}</p>
+      </div>`;
+      }
+      function showError(title, body) {
+        els.reportRoot.classList.add("show");
+        els.reportRoot.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">✕</div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(body || "Unknown error")}</p>
+      </div>`;
+      }
+
+      // ============================================================
+      // Helpers
+      // ============================================================
+      function escapeHtml(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+      function infoTip(text, opts = {}) {
+        const below = opts.below ? "tip-below" : "";
+        return `<span class="info-tip ${below}" data-tip="${escapeHtml(text)}" aria-label="${escapeHtml(text)}">?</span>`;
+      }
+
+      // Boot
+      init();
+      // Initialize PDF export. Wires the customization panel + listeners.
+      // The floating trigger button stays hidden until a report renders
+      // (renderResult calls PdfExport.showTrigger()).
+      if (window.PdfExport) window.PdfExport.init();
+    </script>
+  </body>
+</html>

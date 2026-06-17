@@ -1238,14 +1238,14 @@
         </div>
       </section>
 
-      <!-- Cover page — only shown in PDF mode when customized -->
-      <div class="pdf-cover" id="pdfCover">
-        <div class="pdf-cover-inner">
-          <div class="cover-prepared">Competitor Report · Prepared for</div>
-          <div class="cover-client" id="pdfCoverClient"></div>
-          <div class="cover-intro" id="pdfCoverIntro"></div>
-        </div>
-      </div>
+      <!-- Cover page — branded markup is injected by pdf-export.js at init.
+       The data-report-title attribute tells the export module what to
+       print as the report title on the cover. -->
+      <div
+        class="pdf-cover"
+        id="pdfCover"
+        data-report-title="Competitor Report"
+      ></div>
 
       <section id="reportRoot"></section>
 
@@ -2007,11 +2007,38 @@
           state.youQueries = youQueriesSet;
           state.youPlatforms = youPlatformsSet;
 
-          const classified = await filterCompetitors(
-            candidates,
-            state.targetBrand,
-            allQueries,
-          );
+          // Try cache first — classification is expensive (~30-60s LLM call).
+          // Cache hit means: same brand, same row count, same scan date, so the
+          // candidates list is stable and the LLM would produce the same answer.
+          let classified;
+          const cached = readClassifiedCompetitorsCache();
+          if (cached && Array.isArray(cached.competitors)) {
+            // Rehydrate: the cache stores just classification metadata. We need
+            // to re-attach the `rows` reference and `count` from the live
+            // candidates so downstream rendering can use them. If a cached brand
+            // is no longer in the candidates list (e.g., underlying data changed),
+            // drop it from the rehydrated set.
+            const candByKey = new Map(
+              candidates.map((c) => [brandKey(c.displayName), c]),
+            );
+            classified = cached.competitors
+              .map((c) => {
+                const live = candByKey.get(c.brandKey);
+                if (!live) return null;
+                return {
+                  ...live,
+                  type: c.type,
+                  brandKey: c.brandKey,
+                };
+              })
+              .filter(Boolean);
+          } else {
+            classified = await filterCompetitors(
+              candidates,
+              state.targetBrand,
+              allQueries,
+            );
+          }
           // Compute co-occurrence (both directions) with target brand
           computeCoOccurrence(
             classified,
@@ -2104,6 +2131,13 @@
               .map((c) => ({ name: c.displayName, count: c.count })),
             ...singletons.map((c) => ({ name: c.displayName, count: c.count })),
           ];
+
+          // Persist the classification result for cross-report reuse. Mention
+          // Frequency reads this so it doesn't re-treat common-word brands like
+          // "On" as competitors. Always write — even on a cache hit upstream,
+          // we may have rehydrated only a subset, and the canonical filteredOut
+          // list could have changed slightly.
+          writeClassifiedCompetitorsCache(classified, state.filteredOut);
 
           if (state.competitors.length === 0) {
             showEmpty(
@@ -2792,6 +2826,58 @@
       function writeSummaryCache(key, s) {
         try {
           localStorage.setItem(key, JSON.stringify(s));
+        } catch (e) {}
+      }
+
+      // ============================================================
+      // Classified competitor list cache
+      // ============================================================
+      // The LLM classification step (filterCompetitors → aeo-competitor-filter
+      // webhook) takes 30-60s and was previously re-run every page open.
+      // Caching the result has two wins: faster reopens, AND it lets other
+      // reports (notably Mention Frequency) reuse this report's classification
+      // instead of treating every value in Mention 1..N as a competitor —
+      // which leads to common-English-word brands like "On" inflating counts.
+      //
+      // The cache stores BOTH the kept competitors and the filtered-out list,
+      // because callers may want to know what was excluded (e.g., to show in
+      // an "ignored" UI section). Cache key is scoped to brand + scan.
+      function classifiedCompetitorsCacheKey() {
+        const rows = state.rows || [];
+        return `aeo:classified-competitors:v1:${state.targetBrandLower}:${rows.length}`;
+      }
+
+      function readClassifiedCompetitorsCache() {
+        try {
+          return JSON.parse(
+            localStorage.getItem(classifiedCompetitorsCacheKey()) || "null",
+          );
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function writeClassifiedCompetitorsCache(competitors, filteredOut) {
+        // Store only the minimum each consumer needs. Other reports don't need
+        // co-occurrence stats or snippets — just the brand list and types.
+        const payload = {
+          classifiedAt: new Date().toISOString(),
+          competitors: competitors.map((c) => ({
+            displayName: c.displayName,
+            brandKey: c.brandKey || brandKey(c.displayName),
+            count: c.count,
+            type: c.type, // 'direct_competitor' | 'adjacent_brand'
+          })),
+          filteredOut: filteredOut.map((f) => ({
+            name: f.name,
+            count: f.count,
+          })),
+        };
+        try {
+          localStorage.setItem(
+            classifiedCompetitorsCacheKey(),
+            JSON.stringify(payload),
+          );
         } catch (e) {}
       }
 
